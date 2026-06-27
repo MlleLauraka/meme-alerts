@@ -1,4 +1,5 @@
 import os
+import html
 import streamlit as st
 import anthropic
 import json
@@ -158,6 +159,101 @@ st.markdown("""
         gap: 0.65rem;
         margin-top: 0.5rem;
     }
+    .ath-summary {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.3rem;
+        margin: 0.15rem 0 0.5rem 0;
+    }
+    .ath-summary > span {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.25rem 0.35rem;
+        text-align: center;
+    }
+    .ath-summary label {
+        display: block;
+        font-size: 0.5rem !important;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        line-height: 1.1;
+        margin-bottom: 0.05rem;
+    }
+    .ath-summary b {
+        font-size: 0.72rem !important;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.1;
+    }
+    .ath-rows-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.28rem;
+    }
+    @media (min-width: 900px) {
+        .ath-rows-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .ath-compact-row {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.32rem 0.45rem;
+        font-size: 0.68rem !important;
+        line-height: 1.2 !important;
+    }
+    .ath-compact-row * {
+        font-size: inherit !important;
+        line-height: inherit !important;
+    }
+    .ath-compact-main {
+        display: grid;
+        grid-template-columns: 2.6rem minmax(0, 1fr) 3.6rem 3.6rem 2.4rem minmax(0, auto);
+        gap: 0.25rem 0.35rem;
+        align-items: center;
+    }
+    .ath-compact-t {
+        font-weight: 700 !important;
+        color: #1e293b;
+        font-size: 0.68rem !important;
+    }
+    .ath-compact-n {
+        color: #64748b;
+        font-size: 0.64rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ath-compact-p, .ath-compact-a, .ath-compact-pct {
+        font-size: 0.64rem !important;
+        font-weight: 600 !important;
+        color: #1e293b;
+        text-align: right;
+        white-space: nowrap;
+    }
+    .ath-compact-pct.pos { color: #16a34a !important; }
+    .ath-compact-pct.neg { color: #dc2626 !important; }
+    .ath-compact-pct.neu { color: #64748b !important; }
+    .ath-compact-v {
+        font-size: 0.52rem !important;
+        font-weight: 600 !important;
+        padding: 1px 5px;
+        border-radius: 6px;
+        white-space: nowrap;
+        text-align: right;
+        justify-self: end;
+    }
+    .ath-compact-note {
+        margin: 0.2rem 0 0 0;
+        color: #94a3b8;
+        font-size: 0.58rem !important;
+        line-height: 1.25 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     .ath-card {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -275,11 +371,27 @@ st.markdown("""
             overflow-x: auto !important;
             -webkit-overflow-scrolling: touch;
         }
-        .ath-stats {
-            grid-template-columns: 1fr 1fr;
+        .ath-summary {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
-        .ath-stats > div:last-child:nth-child(odd) {
-            grid-column: 1 / -1;
+        .ath-rows-grid {
+            grid-template-columns: 1fr;
+        }
+        .ath-compact-main {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.12rem 0.3rem;
+        }
+        .ath-compact-n {
+            flex: 1 1 5rem;
+            min-width: 0;
+        }
+        .ath-compact-v {
+            margin-left: auto;
+            max-width: 5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .verdict-pill { font-size: 0.72rem; }
         .gap-positive, .gap-neutral, .gap-negative {
@@ -1065,34 +1177,42 @@ def render_weekly_report_tab():
     ]
     st.dataframe(view[raw_cols], use_container_width=True, hide_index=True)
 
-def render_ath_row_ui(row, verdict_style):
+def _ath_pct_class(pct):
+    if pct.startswith("+"):
+        return "pos"
+    if pct.startswith("-"):
+        return "neg"
+    return "neu"
+
+def _ath_row_html(row, verdict_style):
     bg, fg, icon = verdict_style.get(row["verdict"], ("#f1f5f9", "#64748b", "⬛"))
-    with st.container(border=True):
-        head_l, head_r = st.columns([3, 2])
-        with head_l:
-            st.markdown(f"**{row['ticker']}** · {row['name']}")
-        with head_r:
-            st.markdown(
-                f"<span style='background:{bg};color:{fg};font-size:0.72rem;"
-                f"font-weight:600;padding:4px 10px;border-radius:10px;"
-                f"display:inline-block'>{icon} {row['verdict']}</span>",
-                unsafe_allow_html=True,
-            )
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Price Jun 26", row["price_jun26"])
-        c2.metric("ATH", row["ath"])
-        c3.metric("% to ATH", row["pct_to_ath"])
-        note = row["notes"]
-        if row.get("target_2x"):
-            note += f" · 2x target: {row['target_2x']}"
-        st.caption(note)
+    note = row["notes"]
+    if row.get("target_2x"):
+        note += f" · 2x target: {row['target_2x']}"
+    pct = row["pct_to_ath"]
+    return (
+        f"<div class='ath-compact-row'>"
+        f"<div class='ath-compact-main'>"
+        f"<span class='ath-compact-t'>{html.escape(row['ticker'])}</span>"
+        f"<span class='ath-compact-n'>{html.escape(row['name'])}</span>"
+        f"<span class='ath-compact-p'>{html.escape(row['price_jun26'])}</span>"
+        f"<span class='ath-compact-a'>{html.escape(row['ath'])}</span>"
+        f"<span class='ath-compact-pct {_ath_pct_class(pct)}'>{html.escape(pct)}</span>"
+        f"<span class='ath-compact-v' style='background:{bg};color:{fg}'>"
+        f"{icon} {html.escape(row['verdict'])}</span>"
+        f"</div>"
+        f"<div class='ath-compact-note'>{html.escape(note)}</div>"
+        f"</div>"
+    )
+
+def render_ath_rows(rows, verdict_style):
+    body = "".join(_ath_row_html(row, verdict_style) for row in rows)
+    st.html(f"<div class='ath-rows-grid'>{body}</div>")
 
 def render_ath_tracker_tab():
-    st.markdown("## ATH recovery tracker")
-    st.markdown(
-        "All assets from the Jun 26 2026 ATH analysis. "
-        "Post-Oct 2025 cycle high used as ATH reference unless noted. "
-        "Data as of June 26, 2026."
+    st.markdown("#### ATH recovery tracker")
+    st.caption(
+        "Jun 26 2026 · post-Oct 2025 cycle high as ATH reference."
     )
 
     f1, f2, f3 = st.columns([2, 2, 2])
@@ -1142,18 +1262,23 @@ def render_ath_tracker_tab():
 
     rows = sorted(rows, key=lambda r: (VERDICT_ORDER.get(r["verdict"], 9), r["ticker"]))
 
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Total shown", len(rows))
-    m2.metric(
-        "Already at/exceeded ATH",
-        sum(
-            1 for r in rows
-            if "exceeded" in r["verdict"].lower() or "near" in r["verdict"].lower()
-        ),
+    at_exceeded = sum(
+        1 for r in rows
+        if "exceeded" in r["verdict"].lower() or "near" in r["verdict"].lower()
     )
-    m3.metric("Likely", sum(1 for r in rows if "likely" in r["verdict"].lower()))
-    m4.metric("Possible", sum(1 for r in rows if r["verdict"] == "Possible"))
-    m5.metric("Unlikely", sum(1 for r in rows if r["verdict"] == "Unlikely"))
+    likely_n = sum(1 for r in rows if "likely" in r["verdict"].lower())
+    possible_n = sum(1 for r in rows if r["verdict"] == "Possible")
+    unlikely_n = sum(1 for r in rows if r["verdict"] == "Unlikely")
+    st.markdown(
+        f"<div class='ath-summary'>"
+        f"<span><label>Total</label><b>{len(rows)}</b></span>"
+        f"<span><label>At/near ATH</label><b>{at_exceeded}</b></span>"
+        f"<span><label>Likely</label><b>{likely_n}</b></span>"
+        f"<span><label>Possible</label><b>{possible_n}</b></span>"
+        f"<span><label>Unlikely</label><b>{unlikely_n}</b></span>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
     st.markdown("---")
 
@@ -1168,8 +1293,7 @@ def render_ath_tracker_tab():
     }
 
     if rows:
-        for row in rows:
-            render_ath_row_ui(row, verdict_style)
+        render_ath_rows(rows, verdict_style)
     else:
         st.info("No assets match the current filters.")
 
