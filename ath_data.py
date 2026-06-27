@@ -1,34 +1,34 @@
 # ATH Tracker data (source: Crypto_ATH_Analysis_Jun2026.xlsx)
 ATH_DATA = [
-    # Batch 1 — Top 100 3x><5x
+    # Batch 1 — Top 100 3x-5x
     # Already at / near ATH
-    {"ticker":"SPX",     "name":"S&P 500 Index",                              "batch":"Top 100 3x><5x",    "category":"Already near ATH", "price_jun26":"$7,350",      "ath":"$7,621",       "pct_to_ath":"-3.5%",  "verdict":"Already near ATH", "notes":"S&P 500 Index"},
+    {"ticker":"SPX",     "name":"S&P 500 Index",                              "batch":"Top 100 3x-5x",    "category":"Already near ATH", "price_jun26":"$7,350",      "ath":"$7,621",       "pct_to_ath":"-3.5%",  "verdict":"Already near ATH", "notes":"S&P 500 Index"},
     # Likely
-    {"ticker":"SOL",     "name":"Solana",                                     "batch":"Top 100 3x><5x",    "category":"Likely",           "price_jun26":"~$70",        "ath":"~$295",        "pct_to_ath":"-76%",   "verdict":"Likely",           "notes":"Layer 1 · High utility · ETF / treasury adoption"},
-    {"ticker":"LINK",    "name":"Chainlink",                                  "batch":"Top 100 3x><5x",    "category":"Likely",           "price_jun26":"~$7.30",      "ath":"~$14",         "pct_to_ath":"-48%",   "verdict":"Likely",           "notes":"Oracle infra · 47-bank RWA settlement · 2x target"},
-    {"ticker":"AAVE",    "name":"Aave",                                       "batch":"Top 100 3x><5x",    "category":"Likely",           "price_jun26":"~$140",       "ath":"~$340",        "pct_to_ath":"-59%",   "verdict":"Likely",           "notes":"DeFi lending · Kraken 15% stake talks"},
-    {"ticker":"OKB",     "name":"OKB",                                        "batch":"Top 100 3x><5x",    "category":"Likely",           "price_jun26":"~$38",        "ath":"~$65",         "pct_to_ath":"-42%",   "verdict":"Likely",           "notes":"OKX exchange token · buy-burn"},
-    {"ticker":"ONDO",    "name":"Ondo Finance",                               "batch":"Top 100 3x><5x",    "category":"Likely",           "price_jun26":"~$0.36",      "ath":"~$0.90",       "pct_to_ath":"-60%",   "verdict":"Likely",           "notes":"RWA tokenization leader"},
-    {"ticker":"BGB",     "name":"Bitget Token",                               "batch":"Top 100 3x><5x",    "category":"Likely",           "price_jun26":"~$3.80",      "ath":"~$9.00",       "pct_to_ath":"-58%",   "verdict":"Likely",           "notes":"Bitget exchange token"},
+    {"ticker":"SOL",     "name":"Solana",                                     "batch":"Top 100 3x-5x",    "category":"Likely",           "price_jun26":"~$70",        "ath":"~$295",        "pct_to_ath":"-76%",   "verdict":"Likely",           "notes":"Layer 1 · High utility · ETF / treasury adoption"},
+    {"ticker":"LINK",    "name":"Chainlink",                                  "batch":"Top 100 3x-5x",    "category":"Likely",           "price_jun26":"~$7.30",      "ath":"~$14",         "pct_to_ath":"-48%",   "verdict":"Likely",           "notes":"Oracle infra · 47-bank RWA settlement · 2x target"},
+    {"ticker":"AAVE",    "name":"Aave",                                       "batch":"Top 100 3x-5x",    "category":"Likely",           "price_jun26":"~$140",       "ath":"~$340",        "pct_to_ath":"-59%",   "verdict":"Likely",           "notes":"DeFi lending · Kraken 15% stake talks"},
+    {"ticker":"OKB",     "name":"OKB",                                        "batch":"Top 100 3x-5x",    "category":"Likely",           "price_jun26":"~$38",        "ath":"~$65",         "pct_to_ath":"-42%",   "verdict":"Likely",           "notes":"OKX exchange token · buy-burn"},
+    {"ticker":"ONDO",    "name":"Ondo Finance",                               "batch":"Top 100 3x-5x",    "category":"Likely",           "price_jun26":"~$0.36",      "ath":"~$0.90",       "pct_to_ath":"-60%",   "verdict":"Likely",           "notes":"RWA tokenization leader"},
+    {"ticker":"BGB",     "name":"Bitget Token",                               "batch":"Top 100 3x-5x",    "category":"Likely",           "price_jun26":"~$3.80",      "ath":"~$9.00",       "pct_to_ath":"-58%",   "verdict":"Likely",           "notes":"Bitget exchange token"},
     # Possible
-    {"ticker":"DOGE",    "name":"Dogecoin",                                   "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.10",      "ath":"~$0.48",       "pct_to_ath":"-79%",   "verdict":"Possible",         "notes":"OG meme / payments · Elon factor"},
-    {"ticker":"HBAR",    "name":"Hedera",                                     "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.078",     "ath":"~$0.40",       "pct_to_ath":"-80%",   "verdict":"Possible",         "notes":"Enterprise DLT · ETF approved"},
-    {"ticker":"BCH",     "name":"Bitcoin Cash",                               "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$380",       "ath":"~$800",        "pct_to_ath":"-52%",   "verdict":"Possible",         "notes":"Payments fork · fading relevance"},
-    {"ticker":"PEPE",    "name":"Pepe",                                       "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.0000070", "ath":"~$0.000027",   "pct_to_ath":"-74%",   "verdict":"Possible",         "notes":"Top meme by volume · cultural staying power"},
-    {"ticker":"AVAX",    "name":"Avalanche",                                  "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$6.50",      "ath":"~$45",         "pct_to_ath":"-86%",   "verdict":"Possible",         "notes":"Layer 1 · Subnet ecosystem"},
-    {"ticker":"FET",     "name":"Fetch.ai",                                   "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.50",      "ath":"~$3.40",       "pct_to_ath":"-85%",   "verdict":"Possible",         "notes":"AI agents · ASI Alliance"},
-    {"ticker":"CRO",     "name":"Cronos",                                     "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.070",     "ath":"~$0.22",       "pct_to_ath":"-68%",   "verdict":"Possible",         "notes":"Crypto.com ecosystem · consumer"},
-    {"ticker":"SHIB",    "name":"Shiba Inu",                                  "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.0000050", "ath":"~$0.000015",   "pct_to_ath":"-67%",   "verdict":"Possible",         "notes":"Shibarium L2 · large community"},
-    {"ticker":"TIA",     "name":"Celestia",                                   "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$1.80",      "ath":"~$8.00",       "pct_to_ath":"-77%",   "verdict":"Possible",         "notes":"Modular DA layer"},
-    {"ticker":"POL",     "name":"Polygon (rebranded)",                        "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.19",      "ath":"~$0.72",       "pct_to_ath":"-74%",   "verdict":"Possible",         "notes":"Polygon rebranded · L2 infra"},
-    {"ticker":"ASTER",   "name":"Astar",                                      "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$0.12",      "ath":"~$0.50",       "pct_to_ath":"-76%",   "verdict":"Possible",         "notes":"AI infra / compute"},
-    {"ticker":"FIL",     "name":"Filecoin",                                   "batch":"Top 100 3x><5x",    "category":"Possible",         "price_jun26":"~$2.20",      "ath":"~$8.00",       "pct_to_ath":"-72%",   "verdict":"Possible",         "notes":"Decentralized storage"},
+    {"ticker":"DOGE",    "name":"Dogecoin",                                   "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.10",      "ath":"~$0.48",       "pct_to_ath":"-79%",   "verdict":"Possible",         "notes":"OG meme / payments · Elon factor"},
+    {"ticker":"HBAR",    "name":"Hedera",                                     "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.078",     "ath":"~$0.40",       "pct_to_ath":"-80%",   "verdict":"Possible",         "notes":"Enterprise DLT · ETF approved"},
+    {"ticker":"BCH",     "name":"Bitcoin Cash",                               "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$380",       "ath":"~$800",        "pct_to_ath":"-52%",   "verdict":"Possible",         "notes":"Payments fork · fading relevance"},
+    {"ticker":"PEPE",    "name":"Pepe",                                       "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.0000070", "ath":"~$0.000027",   "pct_to_ath":"-74%",   "verdict":"Possible",         "notes":"Top meme by volume · cultural staying power"},
+    {"ticker":"AVAX",    "name":"Avalanche",                                  "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$6.50",      "ath":"~$45",         "pct_to_ath":"-86%",   "verdict":"Possible",         "notes":"Layer 1 · Subnet ecosystem"},
+    {"ticker":"FET",     "name":"Fetch.ai",                                   "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.50",      "ath":"~$3.40",       "pct_to_ath":"-85%",   "verdict":"Possible",         "notes":"AI agents · ASI Alliance"},
+    {"ticker":"CRO",     "name":"Cronos",                                     "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.070",     "ath":"~$0.22",       "pct_to_ath":"-68%",   "verdict":"Possible",         "notes":"Crypto.com ecosystem · consumer"},
+    {"ticker":"SHIB",    "name":"Shiba Inu",                                  "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.0000050", "ath":"~$0.000015",   "pct_to_ath":"-67%",   "verdict":"Possible",         "notes":"Shibarium L2 · large community"},
+    {"ticker":"TIA",     "name":"Celestia",                                   "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$1.80",      "ath":"~$8.00",       "pct_to_ath":"-77%",   "verdict":"Possible",         "notes":"Modular DA layer"},
+    {"ticker":"POL",     "name":"Polygon (rebranded)",                        "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.19",      "ath":"~$0.72",       "pct_to_ath":"-74%",   "verdict":"Possible",         "notes":"Polygon rebranded · L2 infra"},
+    {"ticker":"ASTER",   "name":"Astar",                                      "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$0.12",      "ath":"~$0.50",       "pct_to_ath":"-76%",   "verdict":"Possible",         "notes":"AI infra / compute"},
+    {"ticker":"FIL",     "name":"Filecoin",                                   "batch":"Top 100 3x-5x",    "category":"Possible",         "price_jun26":"~$2.20",      "ath":"~$8.00",       "pct_to_ath":"-72%",   "verdict":"Possible",         "notes":"Decentralized storage"},
     # Unlikely
-    {"ticker":"FLR",     "name":"Flare",                                      "batch":"Top 100 3x><5x",    "category":"Unlikely",         "price_jun26":"~$0.012",     "ath":"~$0.058",      "pct_to_ath":"-79%",   "verdict":"Unlikely",         "notes":"Cross-chain oracle · weak demand"},
-    {"ticker":"TRUMP",   "name":"Official Trump",                             "batch":"Top 100 3x><5x",    "category":"Unlikely",         "price_jun26":"~$1.68",      "ath":"~$74",         "pct_to_ath":"-98%",   "verdict":"Unlikely",         "notes":"Meme/political · -98% · token unlocks · insider losses"},
-    {"ticker":"WLFI",    "name":"World Liberty Financial",                    "batch":"Top 100 3x><5x",    "category":"Unlikely",         "price_jun26":"~$0.11",      "ath":"~$0.18",       "pct_to_ath":"-39%",   "verdict":"Unlikely",         "notes":"DeFi / Trump-linked governance · illiquid"},
-    {"ticker":"PUMP",    "name":"Pump.fun",                                   "batch":"Top 100 3x><5x",    "category":"Unlikely",         "price_jun26":"~$0.003",     "ath":"~$0.016",      "pct_to_ath":"-81%",   "verdict":"Unlikely",         "notes":"pump.fun token · launchpad hype cooled"},
-    {"ticker":"SPX6900", "name":"SPX6900",                                    "batch":"Top 100 3x><5x",    "category":"Unlikely",         "price_jun26":"~$0.33",      "ath":"~$2.27",       "pct_to_ath":"-85%",   "verdict":"Unlikely",         "notes":"Meme coin · community thin"},
+    {"ticker":"FLR",     "name":"Flare",                                      "batch":"Top 100 3x-5x",    "category":"Unlikely",         "price_jun26":"~$0.012",     "ath":"~$0.058",      "pct_to_ath":"-79%",   "verdict":"Unlikely",         "notes":"Cross-chain oracle · weak demand"},
+    {"ticker":"TRUMP",   "name":"Official Trump",                             "batch":"Top 100 3x-5x",    "category":"Unlikely",         "price_jun26":"~$1.68",      "ath":"~$74",         "pct_to_ath":"-98%",   "verdict":"Unlikely",         "notes":"Meme/political · -98% · token unlocks · insider losses"},
+    {"ticker":"WLFI",    "name":"World Liberty Financial",                    "batch":"Top 100 3x-5x",    "category":"Unlikely",         "price_jun26":"~$0.11",      "ath":"~$0.18",       "pct_to_ath":"-39%",   "verdict":"Unlikely",         "notes":"DeFi / Trump-linked governance · illiquid"},
+    {"ticker":"PUMP",    "name":"Pump.fun",                                   "batch":"Top 100 3x-5x",    "category":"Unlikely",         "price_jun26":"~$0.003",     "ath":"~$0.016",      "pct_to_ath":"-81%",   "verdict":"Unlikely",         "notes":"pump.fun token · launchpad hype cooled"},
+    {"ticker":"SPX6900", "name":"SPX6900",                                    "batch":"Top 100 3x-5x",    "category":"Unlikely",         "price_jun26":"~$0.33",      "ath":"~$2.27",       "pct_to_ath":"-85%",   "verdict":"Unlikely",         "notes":"Meme coin · community thin"},
 
     # Batch 2 — Top 100 >5x
     # Possible
@@ -92,14 +92,16 @@ VERDICT_ORDER = {
 
 # Display order for the Batch filter (must match `batch` field on each row)
 ATH_BATCHES = [
-    "Top 100 3x><5x",
+    "Top 100 3x-5x",
     "Top 100 >5x",
     "2x +potential ATH",
 ]
 
 # Map old batch names (pre-rename) → current names
 BATCH_LEGACY_ALIASES = {
-    "Major Alts": "Top 100 3x><5x",
+    "Major Alts": "Top 100 3x-5x",
+    "Top 100 3x><5x": "Top 100 3x-5x",
+    "Top 100 3x<=5x": "Top 100 3x-5x",
     "L1s & DeFi": "Top 100 >5x",
     "2x ATH": "2x +potential ATH",
     "Meme Coins": None,

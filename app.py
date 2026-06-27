@@ -33,13 +33,15 @@ from weekly_report import (
 from ath_data import ATH_DATA, VERDICT_ORDER
 
 ATH_BATCHES = [
-    "Top 100 3x><5x",
+    "Top 100 3x-5x",
     "Top 100 >5x",
     "2x +potential ATH",
 ]
 
 BATCH_LEGACY_ALIASES = {
-    "Major Alts": "Top 100 3x><5x",
+    "Major Alts": "Top 100 3x-5x",
+    "Top 100 3x><5x": "Top 100 3x-5x",
+    "Top 100 3x<=5x": "Top 100 3x-5x",
     "L1s & DeFi": "Top 100 >5x",
     "2x ATH": "2x +potential ATH",
     "Meme Coins": None,
@@ -983,21 +985,10 @@ def render_weekly_report_tab():
 
     if snapshots.empty:
         st.info("No weekly report data yet.")
-        st.markdown(
-            """
-            **Setup (one time):**
-            ```bash
-            cd /Users/Laura/Downloads/meme_alerts
-            chmod +x install_weekly_cron.sh weekly_run.sh
-            ./install_weekly_cron.sh   # Mondays 9:00 AM
-            ```
-
-            **Run manually now:**
-            ```bash
-            ./weekly_run.sh
-            ```
-            Or use **Run weekly report now** in the sidebar under Pipeline.
-            """
+        st.caption(
+            "Weekly reports come from Monday pipeline scans saved to an Excel file. "
+            "On this hosted app, use **Run weekly report now** in the sidebar — "
+            "it takes several minutes and scans all chains."
         )
         return
 
@@ -1074,33 +1065,27 @@ def render_weekly_report_tab():
     ]
     st.dataframe(view[raw_cols], use_container_width=True, hide_index=True)
 
-def render_ath_row_card(row, verdict_style):
+def render_ath_row_ui(row, verdict_style):
     bg, fg, icon = verdict_style.get(row["verdict"], ("#f1f5f9", "#64748b", "⬛"))
-    pct = row["pct_to_ath"]
-    if pct.startswith("+"):
-        pct_color = "#16a34a"
-    elif pct.startswith("-"):
-        pct_color = "#dc2626"
-    else:
-        pct_color = "#64748b"
-    extra = ""
-    if row.get("target_2x"):
-        extra = f" · <strong>2x target: {row['target_2x']}</strong>"
-    return f"""
-    <article class="ath-card">
-        <header class="ath-card-header">
-            <span class="ath-ticker">{row['ticker']}</span>
-            <span class="ath-badge" style="background:{bg};color:{fg}">{icon} {row['verdict']}</span>
-        </header>
-        <div class="ath-name">{row['name']}</div>
-        <dl class="ath-stats">
-            <div><dt>Price Jun 26</dt><dd>{row['price_jun26']}</dd></div>
-            <div><dt>ATH</dt><dd>{row['ath']}</dd></div>
-            <div><dt>% to ATH</dt><dd style="color:{pct_color}">{pct}</dd></div>
-        </dl>
-        <p class="ath-notes">{row['notes']}{extra}</p>
-    </article>
-    """
+    with st.container(border=True):
+        head_l, head_r = st.columns([3, 2])
+        with head_l:
+            st.markdown(f"**{row['ticker']}** · {row['name']}")
+        with head_r:
+            st.markdown(
+                f"<span style='background:{bg};color:{fg};font-size:0.72rem;"
+                f"font-weight:600;padding:4px 10px;border-radius:10px;"
+                f"display:inline-block'>{icon} {row['verdict']}</span>",
+                unsafe_allow_html=True,
+            )
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Price Jun 26", row["price_jun26"])
+        c2.metric("ATH", row["ath"])
+        c3.metric("% to ATH", row["pct_to_ath"])
+        note = row["notes"]
+        if row.get("target_2x"):
+            note += f" · 2x target: {row['target_2x']}"
+        st.caption(note)
 
 def render_ath_tracker_tab():
     st.markdown("## ATH recovery tracker")
@@ -1183,23 +1168,18 @@ def render_ath_tracker_tab():
     }
 
     if rows:
-        cards_html = "".join(render_ath_row_card(row, verdict_style) for row in rows)
-        st.markdown(f'<div class="ath-list">{cards_html}</div>', unsafe_allow_html=True)
+        for row in rows:
+            render_ath_row_ui(row, verdict_style)
     else:
         st.info("No assets match the current filters.")
 
     st.markdown("---")
-    st.markdown(
-        "<div style='font-size:0.75rem;color:#94a3b8;line-height:1.8'>"
-        "⬆ Already exceeded ATH &nbsp;·&nbsp; "
-        "✅ Already near ATH (within 5%) &nbsp;·&nbsp; "
-        "🟢 Likely — strong fundamentals, manageable gap &nbsp;·&nbsp; "
-        "🟡 Possible — needs macro tailwind or alt season &nbsp;·&nbsp; "
-        "🔴 Unlikely — structural headwinds or extreme gap<br>"
+    st.caption(
+        "⬆ Already exceeded ATH · ✅ Already near ATH (within 5%) · "
+        "🟢 Likely — strong fundamentals · 🟡 Possible — needs macro tailwind · "
+        "🔴 Unlikely — structural headwinds. "
         "ATH reference: post-October 2025 cycle high unless noted. "
         "Data as of June 26, 2026. Not financial advice."
-        "</div>",
-        unsafe_allow_html=True,
     )
 
 def main():
