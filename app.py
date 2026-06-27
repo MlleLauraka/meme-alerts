@@ -61,13 +61,19 @@ load_dotenv()
 st.set_page_config(
     page_title="Memecoin Runner Indicator",
     page_icon="🪙",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
 st.markdown("""
 <style>
-    .main .block-container { padding-top: 2rem; max-width: 1100px; }
+    .main .block-container {
+        padding-top: 2rem;
+        max-width: 1100px;
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
     .metric-card {
         background: #f8f9fa;
         border: 1px solid #e9ecef;
@@ -144,6 +150,149 @@ st.markdown("""
         color: #94a3b8;
         margin-bottom: 0.5rem;
         margin-top: 1.5rem;
+    }
+    .ath-list {
+        display: grid;
+        gap: 0.65rem;
+        margin-top: 0.5rem;
+    }
+    .ath-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+    }
+    .ath-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.25rem;
+    }
+    .ath-ticker {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.95rem;
+    }
+    .ath-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+    .ath-name {
+        color: #475569;
+        font-size: 0.82rem;
+        margin-bottom: 0.6rem;
+    }
+    .ath-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin: 0 0 0.6rem 0;
+    }
+    .ath-stats > div {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.45rem 0.55rem;
+    }
+    .ath-stats dt {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        margin: 0;
+    }
+    .ath-stats dd {
+        margin: 0.15rem 0 0 0;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #1e293b;
+        word-break: break-word;
+    }
+    .ath-notes {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.78rem;
+        line-height: 1.45;
+    }
+    .quick-picks-label {
+        margin-top: 0.5rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+    @media (max-width: 480px) {
+        .main .block-container {
+            padding-top: max(0.75rem, env(safe-area-inset-top));
+            padding-left: max(0.75rem, env(safe-area-inset-left));
+            padding-right: max(0.75rem, env(safe-area-inset-right));
+        }
+        h1 { font-size: 1.45rem !important; line-height: 1.25 !important; }
+        h2 { font-size: 1.2rem !important; line-height: 1.3 !important; }
+        h3, h4 { font-size: 1rem !important; }
+        .score-big { font-size: 2rem !important; }
+        .score-hero { font-size: 2rem !important; }
+        [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+            gap: 0.35rem !important;
+        }
+        [data-testid="column"] {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+        [data-testid="stTabs"] [data-baseweb="tab-list"] {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        [data-testid="stTabs"] [data-baseweb="tab-list"]::-webkit-scrollbar {
+            display: none;
+        }
+        [data-testid="stTabs"] button[data-baseweb="tab"] {
+            white-space: nowrap;
+            font-size: 0.78rem;
+            min-height: 44px;
+            padding: 0.35rem 0.65rem;
+        }
+        .stButton > button {
+            min-height: 44px;
+            font-size: 0.9rem;
+        }
+        .stTextInput input, .stSelectbox div, .stMultiSelect div {
+            min-height: 44px;
+            font-size: 16px !important;
+        }
+        div[data-testid="stDataFrame"], div[data-testid="stDataFrame"] > div {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .ath-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+        .ath-stats > div:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+        }
+        .verdict-pill { font-size: 0.72rem; }
+        .gap-positive, .gap-neutral, .gap-negative {
+            font-size: 0.85rem;
+            padding: 0.55rem 0.75rem;
+        }
+    }
+    @media (min-width: 768px) {
+        .ath-list { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 481px) and (max-width: 767px) {
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(5)) [data-testid="column"] {
+            flex: 1 1 calc(50% - 0.5rem) !important;
+            min-width: calc(50% - 0.5rem) !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -373,11 +522,9 @@ def render_methodology_tab():
         st.warning("**Cycle timing matters most**\n\nAs of June 2026 (~26 months post-halving), we are in a subdued phase for meme speculation. Even perfect structural scores face a cycle headwind until ~Apr 2028.")
 
 def get_api_key():
-    if st.session_state.get("api_key"):
-        return st.session_state.api_key
     try:
         return st.secrets["ANTHROPIC_API_KEY"]
-    except (KeyError, FileError):
+    except (KeyError, FileError, AttributeError):
         pass
     return os.environ.get("ANTHROPIC_API_KEY")
 
@@ -426,10 +573,7 @@ def render_analyser_tab():
 
     api_key = get_api_key()
     if not api_key:
-        st.warning(
-            "Anthropic API key required. Add it in the sidebar, set `ANTHROPIC_API_KEY` in your environment, "
-            "or create a `.env` file in this project folder."
-        )
+        st.warning("Coin analysis is unavailable — the server API key is not configured.")
 
     if "history" not in st.session_state:
         st.session_state.history = []
@@ -440,7 +584,7 @@ def render_analyser_tab():
     if prefill_query:
         st.session_state.coin_query_input = prefill_query
 
-    col_input, col_btn = st.columns([4, 1])
+    col_input, col_btn = st.columns([3, 1])
     with col_input:
         coin_query = st.text_input(
             "Coin name or ticker",
@@ -451,14 +595,15 @@ def render_analyser_tab():
     with col_btn:
         analyse_clicked = st.button("Analyse ↗", type="primary", use_container_width=True)
 
-    st.markdown("<div style='margin-top:0.5rem; margin-bottom:0.25rem; font-size:0.75rem; color:#94a3b8'>Quick picks:</div>", unsafe_allow_html=True)
-    qcols = st.columns(10)
+    st.markdown("<div class='quick-picks-label'>Quick picks:</div>", unsafe_allow_html=True)
     quick_coins = ["BONK", "SHIB", "FLOKI", "MOODENG", "NEIRO", "MEW", "TURBO", "BABYDOGE", "BRETT", "MOG"]
     quick_selected = None
-    for col, qc in zip(qcols, quick_coins):
-        with col:
-            if st.button(qc, key=f"q_{qc}", use_container_width=True):
-                quick_selected = qc
+    for row_start in range(0, len(quick_coins), 5):
+        qcols = st.columns(5)
+        for col, qc in zip(qcols, quick_coins[row_start:row_start + 5]):
+            with col:
+                if st.button(qc, key=f"q_{qc}", use_container_width=True):
+                    quick_selected = qc
 
     query_to_run = quick_selected or (coin_query if analyse_clicked else None)
     if prefill_query and not query_to_run:
@@ -466,7 +611,7 @@ def render_analyser_tab():
 
     if query_to_run:
         if not api_key:
-            st.error("Add your Anthropic API key in the sidebar before analysing a coin.")
+            st.error("Analysis is unavailable — the server API key is not configured.")
             return
         with st.spinner(f"Researching {query_to_run.upper()} and scoring against the framework..."):
             try:
@@ -498,7 +643,7 @@ def render_analyser_tab():
                 st.error("The AI returned an unexpected format. Try again or try a different coin.")
                 return
             except anthropic.AuthenticationError:
-                st.error("Invalid Anthropic API key. Check the key in `.env` or the sidebar.")
+                st.error("Invalid API key on the server. Update `.env` locally or Streamlit secrets when deployed.")
                 return
             except anthropic.APIConnectionError as e:
                 st.error(format_api_error(e))
@@ -567,7 +712,7 @@ def render_analyser_tab():
         score_display = "DQ" if vetoed else str(total)
         st.markdown(f"""
         <div style='text-align:center; padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0'>
-            <div style='font-size:3rem; font-weight:800; color:{sc}; line-height:1'>{score_display}</div>
+            <div class='score-big score-hero' style='font-weight:800; color:{sc}; line-height:1'>{score_display}</div>
             <div style='font-size:0.75rem; color:#94a3b8; margin-bottom:0.5rem'>/ 100</div>
             <span class='verdict-pill {verdict_class}'>{verdict_text}</span>
         </div>
@@ -929,6 +1074,34 @@ def render_weekly_report_tab():
     ]
     st.dataframe(view[raw_cols], use_container_width=True, hide_index=True)
 
+def render_ath_row_card(row, verdict_style):
+    bg, fg, icon = verdict_style.get(row["verdict"], ("#f1f5f9", "#64748b", "⬛"))
+    pct = row["pct_to_ath"]
+    if pct.startswith("+"):
+        pct_color = "#16a34a"
+    elif pct.startswith("-"):
+        pct_color = "#dc2626"
+    else:
+        pct_color = "#64748b"
+    extra = ""
+    if row.get("target_2x"):
+        extra = f" · <strong>2x target: {row['target_2x']}</strong>"
+    return f"""
+    <article class="ath-card">
+        <header class="ath-card-header">
+            <span class="ath-ticker">{row['ticker']}</span>
+            <span class="ath-badge" style="background:{bg};color:{fg}">{icon} {row['verdict']}</span>
+        </header>
+        <div class="ath-name">{row['name']}</div>
+        <dl class="ath-stats">
+            <div><dt>Price Jun 26</dt><dd>{row['price_jun26']}</dd></div>
+            <div><dt>ATH</dt><dd>{row['ath']}</dd></div>
+            <div><dt>% to ATH</dt><dd style="color:{pct_color}">{pct}</dd></div>
+        </dl>
+        <p class="ath-notes">{row['notes']}{extra}</p>
+    </article>
+    """
+
 def render_ath_tracker_tab():
     st.markdown("## ATH recovery tracker")
     st.markdown(
@@ -1009,83 +1182,10 @@ def render_ath_tracker_tab():
         "No data": ("#f1f5f9", "#64748b", "⬛"),
     }
 
-    hcols = st.columns([1, 2.5, 1.2, 1.2, 1.2, 1.5, 3])
-    for col, label in zip(
-        hcols,
-        ["Ticker", "Name", "Price Jun 26", "ATH", "% to ATH", "Verdict", "Notes"],
-    ):
-        col.markdown(
-            f"<div style='font-size:0.72rem;font-weight:700;letter-spacing:0.05em;"
-            f"text-transform:uppercase;color:#94a3b8'>{label}</div>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-
-    for row in rows:
-        bg, fg, icon = verdict_style.get(row["verdict"], ("#f1f5f9", "#64748b", "⬛"))
-        c1, c2, c3, c4, c5, c6, c7 = st.columns([1, 2.5, 1.2, 1.2, 1.2, 1.5, 3])
-
-        with c1:
-            st.markdown(
-                f"<div style='font-weight:700;color:#1e293b;font-size:0.85rem;"
-                f"padding:4px 0'>{row['ticker']}</div>",
-                unsafe_allow_html=True,
-            )
-        with c2:
-            st.markdown(
-                f"<div style='color:#475569;font-size:0.82rem;padding:4px 0'>"
-                f"{row['name']}</div>",
-                unsafe_allow_html=True,
-            )
-        with c3:
-            st.markdown(
-                f"<div style='color:#1e293b;font-size:0.82rem;padding:4px 0'>"
-                f"{row['price_jun26']}</div>",
-                unsafe_allow_html=True,
-            )
-        with c4:
-            st.markdown(
-                f"<div style='color:#1e293b;font-size:0.82rem;padding:4px 0'>"
-                f"{row['ath']}</div>",
-                unsafe_allow_html=True,
-            )
-        with c5:
-            pct = row["pct_to_ath"]
-            if pct.startswith("+"):
-                color = "#16a34a"
-            elif pct.startswith("-"):
-                color = "#dc2626"
-            else:
-                color = "#64748b"
-            st.markdown(
-                f"<div style='color:{color};font-weight:600;font-size:0.82rem;padding:4px 0'>"
-                f"{pct}</div>",
-                unsafe_allow_html=True,
-            )
-        with c6:
-            st.markdown(
-                f"<div style='background:{bg};color:{fg};font-size:0.72rem;font-weight:600;"
-                f"padding:3px 8px;border-radius:10px;display:inline-block;margin-top:2px'>"
-                f"{icon} {row['verdict']}</div>",
-                unsafe_allow_html=True,
-            )
-        with c7:
-            extra = ""
-            if row.get("target_2x"):
-                extra = f" · <strong>2x target: {row['target_2x']}</strong>"
-            st.markdown(
-                f"<div style='color:#64748b;font-size:0.78rem;padding:4px 0'>"
-                f"{row['notes']}{extra}</div>",
-                unsafe_allow_html=True,
-            )
-
-        st.markdown(
-            "<div style='height:1px;background:#f1f5f9;margin:1px 0'></div>",
-            unsafe_allow_html=True,
-        )
-
-    if not rows:
+    if rows:
+        cards_html = "".join(render_ath_row_card(row, verdict_style) for row in rows)
+        st.markdown(f'<div class="ath-list">{cards_html}</div>', unsafe_allow_html=True)
+    else:
         st.info("No assets match the current filters.")
 
     st.markdown("---")
@@ -1104,22 +1204,6 @@ def render_ath_tracker_tab():
 
 def main():
     with st.sidebar:
-        st.markdown("### API key")
-        if "api_key" not in st.session_state:
-            st.session_state.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        st.text_input(
-            "Anthropic API key",
-            type="password",
-            key="api_key",
-            placeholder="sk-ant-...",
-            help="Get one at console.anthropic.com. Saved for this session only.",
-        )
-        if get_api_key():
-            st.success("API key set")
-        else:
-            st.caption("Or add `ANTHROPIC_API_KEY=sk-ant-...` to a `.env` file in this folder.")
-
-        st.markdown("---")
         st.markdown("### Pipeline")
 
         pipeline_mode = st.radio(
@@ -1139,7 +1223,7 @@ def main():
             if run_manual and manual_q.strip():
                 api_key = get_api_key()
                 if not api_key:
-                    st.sidebar.error("API key required for hybrid scoring.")
+                    st.sidebar.error("Scan unavailable — server API key not configured.")
                 else:
                     with st.spinner(f"Scanning {manual_q}..."):
                         pairs = search_dex_pairs(
@@ -1202,7 +1286,7 @@ def main():
         if st.button("Run weekly report now ↗", use_container_width=True):
             api_key = get_api_key()
             if not api_key:
-                st.sidebar.error("API key required for weekly scoring.")
+                st.sidebar.error("Weekly scan unavailable — server API key not configured.")
             else:
                 with st.spinner("Running weekly scan across all chains..."):
                     try:
@@ -1217,11 +1301,11 @@ def main():
     st.markdown("<div style='color:#64748b; margin-top:-0.5rem; margin-bottom:1.5rem'>Inversal framework · $1B+ benchmark cohort · June 2026</div>", unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📖 Methodology and framework",
-        "🔍 Analyse a coin",
+        "📖 Framework",
+        "🔍 Analyse",
         "📡 Live feed",
-        "📊 Weekly report",
-        "📈 ATH Tracker",
+        "📊 Weekly",
+        "📈 ATH",
     ])
 
     with tab1:
