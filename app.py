@@ -174,7 +174,7 @@ st.markdown("""
     }
     .ath-summary label {
         display: block;
-        font-size: 0.5rem !important;
+        font-size: 0.625rem !important;
         font-weight: 700;
         letter-spacing: 0.03em;
         text-transform: uppercase;
@@ -183,7 +183,7 @@ st.markdown("""
         margin-bottom: 0.05rem;
     }
     .ath-summary b {
-        font-size: 0.72rem !important;
+        font-size: 0.8125rem !important;
         font-weight: 700;
         color: #1e293b;
         line-height: 1.1;
@@ -191,15 +191,15 @@ st.markdown("""
     .ath-rows-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 0.28rem;
+        gap: 0.32rem;
     }
     .ath-compact-row {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 6px;
-        padding: 0.32rem 0.45rem;
-        font-size: 0.68rem !important;
-        line-height: 1.2 !important;
+        padding: 0.38rem 0.5rem;
+        font-size: 0.75rem !important;
+        line-height: 1.25 !important;
     }
     .ath-compact-row * {
         font-size: inherit !important;
@@ -207,24 +207,24 @@ st.markdown("""
     }
     .ath-compact-main {
         display: grid;
-        grid-template-columns: 2.6rem minmax(0, 1fr) 3.6rem 3.6rem 2.4rem minmax(0, auto);
-        gap: 0.25rem 0.35rem;
+        grid-template-columns: 3rem minmax(0, 1fr) 4.2rem 4.2rem 2.8rem minmax(0, auto);
+        gap: 0.3rem 0.4rem;
         align-items: center;
     }
     .ath-compact-t {
         font-weight: 700 !important;
         color: #1e293b;
-        font-size: 0.68rem !important;
+        font-size: 0.75rem !important;
     }
     .ath-compact-n {
         color: #64748b;
-        font-size: 0.64rem !important;
+        font-size: 0.72rem !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     .ath-compact-p, .ath-compact-a, .ath-compact-pct {
-        font-size: 0.64rem !important;
+        font-size: 0.75rem !important;
         font-weight: 600 !important;
         color: #1e293b;
         text-align: right;
@@ -234,19 +234,19 @@ st.markdown("""
     .ath-compact-pct.neg { color: #dc2626 !important; }
     .ath-compact-pct.neu { color: #64748b !important; }
     .ath-compact-v {
-        font-size: 0.52rem !important;
+        font-size: 0.65rem !important;
         font-weight: 600 !important;
-        padding: 1px 5px;
+        padding: 2px 6px;
         border-radius: 6px;
         white-space: nowrap;
         text-align: right;
         justify-self: end;
     }
     .ath-compact-note {
-        margin: 0.2rem 0 0 0;
+        margin: 0.22rem 0 0 0;
         color: #94a3b8;
-        font-size: 0.58rem !important;
-        line-height: 1.25 !important;
+        font-size: 0.6875rem !important;
+        line-height: 1.3 !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
