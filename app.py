@@ -193,9 +193,6 @@ st.markdown("""
         grid-template-columns: 1fr;
         gap: 0.28rem;
     }
-    @media (min-width: 900px) {
-        .ath-rows-grid { grid-template-columns: 1fr 1fr; }
-    }
     .ath-compact-row {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
