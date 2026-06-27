@@ -1,0 +1,55 @@
+# Cursor project rules — Memecoin Runner Indicator
+
+## Project overview
+Streamlit app that scores memecoins against the Inversal Framework using Claude AI.
+Two tabs: Methodology (static reference) and Analyser (live AI scoring).
+
+## Key files
+- `app.py` — single-file Streamlit app, all logic here
+- `requirements.txt` — streamlit + anthropic only
+- `README.md` — setup instructions
+
+## Architecture
+- No database — session state only (`st.session_state.history`, `st.session_state.current_result`)
+- Single Anthropic API call per coin scored (claude-sonnet-4-6, max_tokens=1500)
+- API key from environment variable `ANTHROPIC_API_KEY`
+- All rendering via st.markdown with inline HTML/CSS — no external CSS files
+
+## The scoring framework (do not change scoring logic)
+- 5 sections: A(25pts) B(25pts) C(25pts) D(15pts) E(10pts) = 100pts total
+- 6 veto checks: any fail = disqualified regardless of score
+- Benchmark cohort avg = 81, floor = 74
+- Runner gap = candidate score − 81
+- Verdict thresholds: 85+ strong, 70+ promising, 50+ speculative, <50 do not proceed, any veto = disqualified
+
+## System prompt
+The SYSTEM_PROMPT constant in app.py is the scoring engine. Do not modify it unless
+changing the framework logic — it defines the exact JSON schema the AI must return.
+
+## JSON schema from AI (must match exactly)
+{
+  "name": str, "ticker": str, "chain": str, "launched": str,
+  "currentMcap": str, "athMcap": str,
+  "scores": {"A": float, "B": float, "C": float, "D": float, "E": float},
+  "breakdown": {"A1":f,"A2":f,"A3":f,"B1":f,"B2":f,"B3":f,"C1":f,"C2":f,"C3":f,"D1":f,"D2":f,"E1":f,"E2":f},
+  "vetoFails": [str],
+  "findings": [{"icon": "+"|"~"|"x", "text": str}],
+  "runnerSummary": str,
+  "confidence": "high"|"medium"|"low",
+  "confidenceNote": str
+}
+
+## Style conventions
+- All custom styling via st.markdown with inline HTML — no separate CSS files
+- Color palette: indigo (#6366f1) for meme, green (#10b981) for structure,
+  amber (#f59e0b) for growth, red (#ef4444) for cycle, pink (#ec4899) for velocity
+- Verdict colors: strong=#d1fae5/#065f46, promising=#dcfce7/#166534,
+  speculative=#fef3c7/#92400e, do-not/disqualified=#fee2e2/#991b1b
+- Gap colors: positive=#d1fae5, neutral=#fef3c7, negative=#fee2e2
+
+## Common extension points
+- Add more quick-pick coins: extend `quick_coins` list in `render_analyser_tab()`
+- Add more benchmark coins: extend `BENCHMARKS` list and update `AVG_BENCHMARK`
+- Persist history: replace session_state with sqlite or json file
+- Add batch comparison: loop `query_to_run` list and show side-by-side results
+- Export results: add `st.download_button` with JSON/CSV of `st.session_state.history`
