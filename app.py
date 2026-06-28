@@ -199,31 +199,33 @@ st.markdown("""
     }
     .ath-rows-grid {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.4rem;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.45rem;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     .ath-compact-row {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
-        padding: 0.5rem 0.65rem;
-        font-size: 1rem !important;
-        line-height: 1.3 !important;
+        padding: 0.55rem 0.65rem;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
-    .ath-compact-row * {
-        font-size: inherit !important;
-        line-height: inherit !important;
-    }
-    .ath-compact-main {
-        display: grid;
-        grid-template-columns: 3.5rem minmax(0, 1fr) 5rem 5rem 3.2rem minmax(0, auto);
-        gap: 0.35rem 0.5rem;
-        align-items: center;
+    .ath-compact-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+        min-width: 0;
     }
     .ath-compact-t {
         font-weight: 700 !important;
         color: #1e293b;
         font-size: 1rem !important;
+        line-height: 1.25 !important;
+        flex-shrink: 0;
     }
     .ath-compact-t a {
         color: #4f46e5 !important;
@@ -235,38 +237,68 @@ st.markdown("""
     }
     .ath-compact-n {
         color: #64748b;
-        font-size: 0.9375rem !important;
-        white-space: nowrap;
+        font-size: 0.875rem !important;
+        line-height: 1.3 !important;
+        margin: 0.12rem 0 0.35rem;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
     }
-    .ath-compact-p, .ath-compact-a, .ath-compact-pct {
-        font-size: 1rem !important;
+    .ath-compact-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.35rem;
+    }
+    .ath-compact-stat {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.3rem 0.4rem;
+        min-width: 0;
+    }
+    .ath-compact-stat label {
+        display: block;
+        font-size: 0.625rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        line-height: 1.15 !important;
+        margin: 0;
+    }
+    .ath-compact-stat span {
+        display: block;
+        margin-top: 0.12rem;
+        font-size: 0.875rem !important;
         font-weight: 600 !important;
         color: #1e293b;
-        text-align: right;
-        white-space: nowrap;
+        line-height: 1.25 !important;
+        word-break: break-word;
     }
     .ath-compact-pct.pos { color: #16a34a !important; }
     .ath-compact-pct.neg { color: #dc2626 !important; }
     .ath-compact-pct.neu { color: #64748b !important; }
     .ath-compact-v {
-        font-size: 0.8125rem !important;
+        font-size: 0.72rem !important;
         font-weight: 600 !important;
-        padding: 3px 8px;
+        padding: 3px 7px;
         border-radius: 6px;
-        white-space: nowrap;
+        line-height: 1.25 !important;
         text-align: right;
-        justify-self: end;
+        flex: 0 1 auto;
+        max-width: 58%;
+        white-space: normal;
+        word-break: break-word;
     }
     .ath-compact-note {
-        margin: 0.28rem 0 0 0;
+        margin: 0.35rem 0 0 0;
         color: #94a3b8;
-        font-size: 0.875rem !important;
-        line-height: 1.35 !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 0.8125rem !important;
+        line-height: 1.4 !important;
+        white-space: normal;
+        word-break: break-word;
     }
     .ath-card {
         background: #f8fafc;
@@ -386,26 +418,23 @@ st.markdown("""
             -webkit-overflow-scrolling: touch;
         }
         .ath-summary {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .ath-rows-grid {
-            grid-template-columns: 1fr;
+        .ath-summary > span:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
         }
-        .ath-compact-main {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.12rem 0.3rem;
+        .ath-compact-row {
+            padding: 0.5rem 0.55rem;
         }
-        .ath-compact-n {
-            flex: 1 1 5rem;
-            min-width: 0;
+        .ath-compact-t {
+            font-size: 0.9375rem !important;
+        }
+        .ath-compact-stat span {
+            font-size: 0.8125rem !important;
         }
         .ath-compact-v {
-            margin-left: auto;
-            max-width: 5rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.68rem !important;
+            max-width: 62%;
         }
         .verdict-pill { font-size: 0.72rem; }
         .gap-positive, .gap-neutral, .gap-negative {
@@ -1211,22 +1240,141 @@ def _ath_row_html(row, verdict_style):
     )
     return (
         f"<div class='ath-compact-row'>"
-        f"<div class='ath-compact-main'>"
+        f"<div class='ath-compact-head'>"
         f"<span class='ath-compact-t'>{ticker_link}</span>"
-        f"<span class='ath-compact-n'>{html.escape(row['name'])}</span>"
-        f"<span class='ath-compact-p'>{html.escape(row['price_jun26'])}</span>"
-        f"<span class='ath-compact-a'>{html.escape(row['ath'])}</span>"
-        f"<span class='ath-compact-pct {_ath_pct_class(pct)}'>{html.escape(pct)}</span>"
         f"<span class='ath-compact-v' style='background:{bg};color:{fg}'>"
         f"{icon} {html.escape(row['verdict'])}</span>"
+        f"</div>"
+        f"<div class='ath-compact-n'>{html.escape(row['name'])}</div>"
+        f"<div class='ath-compact-stats'>"
+        f"<div class='ath-compact-stat'><label>Price</label>"
+        f"<span>{html.escape(row['price_jun26'])}</span></div>"
+        f"<div class='ath-compact-stat'><label>Oct ATH</label>"
+        f"<span>{html.escape(row['ath'])}</span></div>"
+        f"<div class='ath-compact-stat'><label>vs ATH</label>"
+        f"<span class='ath-compact-pct {_ath_pct_class(pct)}'>{html.escape(pct)}</span></div>"
         f"</div>"
         f"<div class='ath-compact-note'>{html.escape(note)}</div>"
         f"</div>"
     )
 
+ATH_EMBED_CSS = """
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+.ath-rows-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.ath-compact-row {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.55rem 0.65rem;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+.ath-compact-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+}
+.ath-compact-t {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 1rem;
+    line-height: 1.25;
+    flex-shrink: 0;
+}
+.ath-compact-t a {
+    color: #4f46e5;
+    font-weight: 700;
+    text-decoration: none;
+}
+.ath-compact-n {
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    margin: 0.12rem 0 0.35rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.ath-compact-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+}
+.ath-compact-stat {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.3rem 0.4rem;
+    min-width: 0;
+}
+.ath-compact-stat label {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    line-height: 1.15;
+    margin: 0;
+}
+.ath-compact-stat span {
+    display: block;
+    margin-top: 0.12rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.25;
+    word-break: break-word;
+}
+.ath-compact-pct.pos { color: #16a34a; }
+.ath-compact-pct.neg { color: #dc2626; }
+.ath-compact-pct.neu { color: #64748b; }
+.ath-compact-v {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 6px;
+    line-height: 1.25;
+    text-align: right;
+    flex: 0 1 auto;
+    max-width: 58%;
+    white-space: normal;
+    word-break: break-word;
+}
+.ath-compact-note {
+    margin: 0.35rem 0 0;
+    color: #94a3b8;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+}
+@media (max-width: 480px) {
+    .ath-compact-row { padding: 0.5rem 0.55rem; }
+    .ath-compact-t { font-size: 0.9375rem; }
+    .ath-compact-stat span { font-size: 0.8125rem; }
+    .ath-compact-v { font-size: 0.68rem; max-width: 62%; }
+}
+</style>
+"""
+
 def render_ath_rows(rows, verdict_style):
     body = "".join(_ath_row_html(row, verdict_style) for row in rows)
-    st.html(f"<div class='ath-rows-grid'>{body}</div>")
+    st.html(f"{ATH_EMBED_CSS}<div class='ath-rows-grid'>{body}</div>")
 
 def render_ath_tracker_tab():
     st.markdown("#### ATH recovery tracker")
