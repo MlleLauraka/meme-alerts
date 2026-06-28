@@ -31,7 +31,16 @@ from weekly_report import (
     load_snapshots,
     run_weekly_scan,
 )
-from ath_data import ATH_DATA, VERDICT_ORDER
+from ath_data import ATH_DATA, VERDICT_ORDER, BATCH_METHODOLOGY, get_cmc_url
+from ath_db import (
+    get_category_changes,
+    get_last_refresh,
+    get_latest_assets,
+    get_meta,
+    has_live_data,
+    list_snapshots,
+)
+from ath_refresh import run_ath_refresh
 
 ATH_BATCHES = [
     "Top 100 3x-5x",
@@ -215,6 +224,14 @@ st.markdown("""
         font-weight: 700 !important;
         color: #1e293b;
         font-size: 1rem !important;
+    }
+    .ath-compact-t a {
+        color: #4f46e5 !important;
+        font-weight: 700 !important;
+        text-decoration: none !important;
+    }
+    .ath-compact-t a:hover {
+        text-decoration: underline !important;
     }
     .ath-compact-n {
         color: #64748b;
@@ -1187,10 +1204,15 @@ def _ath_row_html(row, verdict_style):
     if row.get("target_2x"):
         note += f" · 2x target: {row['target_2x']}"
     pct = row["pct_to_ath"]
+    cmc = html.escape(get_cmc_url(row["ticker"]), quote=True)
+    ticker = html.escape(row["ticker"])
+    ticker_link = (
+        f"<a href='{cmc}' target='_blank' rel='noopener noreferrer'>{ticker}</a>"
+    )
     return (
         f"<div class='ath-compact-row'>"
         f"<div class='ath-compact-main'>"
-        f"<span class='ath-compact-t'>{html.escape(row['ticker'])}</span>"
+        f"<span class='ath-compact-t'>{ticker_link}</span>"
         f"<span class='ath-compact-n'>{html.escape(row['name'])}</span>"
         f"<span class='ath-compact-p'>{html.escape(row['price_jun26'])}</span>"
         f"<span class='ath-compact-a'>{html.escape(row['ath'])}</span>"
@@ -1208,9 +1230,23 @@ def render_ath_rows(rows, verdict_style):
 
 def render_ath_tracker_tab():
     st.markdown("#### ATH recovery tracker")
-    st.caption(
-        "Jun 26 2026 · post-Oct 2025 cycle high as ATH reference."
-    )
+
+    live = has_live_data()
+    refresh_meta = get_last_refresh()
+    if live and refresh_meta.get("run_at"):
+        run_at = refresh_meta["run_at"].replace("T", " ")[:19]
+        snap = refresh_meta.get("snapshot_date") or "—"
+        vmode = get_meta("verdict_mode") or "rules"
+        verdict_label = "Claude AI" if vmode == "ai" else "rule-based"
+        st.caption(
+            f"**Last refreshed:** {run_at} UTC · snapshot **{snap}** · "
+            f"verdicts: **{verdict_label}** · Oct 2025 high = max price since 1 Oct 2025."
+        )
+    else:
+        st.caption(
+            "Showing **embedded fallback** data (Jun 2026). Run **Refresh ATH data** in the sidebar "
+            "or wait for the weekly job to populate live top-100 batches."
+        )
 
     f1, f2, f3 = st.columns([2, 2, 2])
     batch_options = ["All", *ATH_BATCHES]
@@ -1219,12 +1255,12 @@ def render_ath_tracker_tab():
 
     verdict_options = [
         "Already exceeded ATH", "Already near ATH", "Likely (bull cycle)",
-        "Likely", "Possible", "Unlikely",
+        "Likely", "Possible", "Unlikely", "No data",
     ]
     if "ath_verdict_filter" in st.session_state:
         st.session_state["ath_verdict_filter"] = [
             v for v in st.session_state["ath_verdict_filter"] if v in verdict_options
-        ] or verdict_options[:-1]
+        ] or verdict_options[:-2]
 
     with f1:
         batch_filter_raw = st.selectbox(
@@ -1238,18 +1274,30 @@ def render_ath_tracker_tab():
         verdict_filter = st.multiselect(
             "Verdict",
             verdict_options,
-            default=verdict_options[:-1],
+            default=[v for v in verdict_options if v != "No data"],
             key="ath_verdict_filter",
         )
     with f3:
         search_q = st.text_input("Search ticker or name", placeholder="e.g. SOL")
 
-    rows = list(ATH_DATA)
+    with st.expander("Batch methodology", expanded=False):
+        show_batch = batch_filter if batch_filter != "All" else None
+        batches_to_show = [show_batch] if show_batch else list(ATH_BATCHES)
+        for batch_name in batches_to_show:
+            meta = BATCH_METHODOLOGY[batch_name]
+            st.markdown(f"**{batch_name}**")
+            st.markdown(f"*Rule:* {meta['intent']}")
+            st.markdown(f"*Automation:* {meta['current']}")
+            st.markdown(f"*Notes:* {meta['gaps']}")
+            if len(batches_to_show) > 1:
+                st.markdown("---")
+
+    rows = get_latest_assets() if live else list(ATH_DATA)
     if batch_filter != "All":
-        rows = [r for r in rows if r["batch"] == batch_filter]
+        rows = [r for r in rows if r.get("batch") == batch_filter]
     if verdict_filter:
         allowed = set(verdict_filter)
-        rows = [r for r in rows if r["verdict"] in allowed]
+        rows = [r for r in rows if r.get("verdict") in allowed]
     if search_q.strip():
         q = search_q.strip().upper()
         rows = [
@@ -1257,7 +1305,10 @@ def render_ath_tracker_tab():
             if q in r["ticker"].upper() or q in r["name"].upper()
         ]
 
-    rows = sorted(rows, key=lambda r: (VERDICT_ORDER.get(r["verdict"], 9), r["ticker"]))
+    rows = sorted(
+        rows,
+        key=lambda r: (VERDICT_ORDER.get(r.get("verdict", ""), 9), r.get("rank", 999), r["ticker"]),
+    )
 
     at_exceeded = sum(
         1 for r in rows
@@ -1294,13 +1345,40 @@ def render_ath_tracker_tab():
     else:
         st.info("No assets match the current filters.")
 
+    if live:
+        st.markdown("---")
+        st.markdown("##### Category changes (last 4 weeks)")
+        changes = get_category_changes(weeks=4)
+        snaps = list_snapshots(limit=8)
+        if len(snaps) >= 2:
+            st.caption(
+                f"Comparing weekly snapshots from **{snaps[-1]['snapshot_date']}** "
+                f"to **{snaps[0]['snapshot_date']}**."
+            )
+        if changes:
+            change_df = pd.DataFrame(changes)
+            st.dataframe(
+                change_df[
+                    [
+                        "ticker", "name", "from_batch", "to_batch",
+                        "from_verdict", "to_verdict", "first_seen", "last_seen",
+                    ]
+                ],
+                use_container_width=True,
+                hide_index=True,
+            )
+        elif len(snaps) < 2:
+            st.info(
+                "Need at least **2 weekly snapshots** to show category changes. "
+                "Run refresh again next week (or manually with a different `--date`)."
+            )
+        else:
+            st.info("No batch or verdict changes in the last 4 weeks.")
+
     st.markdown("---")
     st.caption(
-        "⬆ Already exceeded ATH · ✅ Already near ATH (within 5%) · "
-        "🟢 Likely — strong fundamentals · 🟡 Possible — needs macro tailwind · "
-        "🔴 Unlikely — structural headwinds. "
-        "ATH reference: post-October 2025 cycle high unless noted. "
-        "Data as of June 26, 2026. Not financial advice."
+        "Batch rules: **>5× down** → Top 100 >5x · **3×–5× down** → Top 100 3x-5x · "
+        "**<3× down** (non-stable) → 2x +potential ATH. Not financial advice."
     )
 
 def main():
@@ -1380,6 +1458,33 @@ def main():
         if rows:
             st.markdown("---")
             st.caption(f"**{len(rows)}** candidates logged · last: {rows[0].get('timestamp', '')}")
+
+        st.markdown("---")
+        st.markdown("### ATH tracker")
+        refresh_meta = get_last_refresh()
+        if refresh_meta.get("run_at"):
+            st.caption(
+                f"Last refresh: {refresh_meta['run_at'].replace('T', ' ')[:19]} UTC"
+            )
+        else:
+            st.caption("No live refresh yet · weekly Sundays 8:00 UTC · data: CoinGecko")
+        if st.button("Refresh ATH data now ↗", use_container_width=True):
+            progress = st.sidebar.empty()
+
+            def _prog(msg: str) -> None:
+                progress.caption(msg)
+
+            with st.spinner("Refreshing top 100 (2–3 min)…"):
+                try:
+                    result = run_ath_refresh(on_progress=_prog)
+                    mode = result.get("verdict_mode", "rules")
+                    st.sidebar.success(
+                        f"ATH updated — {result['count']} assets · "
+                        f"{result['snapshot_date']} · verdicts: {mode}"
+                    )
+                    st.rerun()
+                except Exception as exc:
+                    st.sidebar.error(f"ATH refresh failed: {exc}")
 
         st.markdown("---")
         st.markdown("### Weekly report")

@@ -1,4 +1,9 @@
 # ATH Tracker data (source: Crypto_ATH_Analysis_Jun2026.xlsx)
+
+BATCH_3X_5X = "Top 100 3x-5x"
+BATCH_GT_5X = "Top 100 >5x"
+BATCH_2X = "2x +potential ATH"
+
 ATH_DATA = [
     # Batch 1 — Top 100 3x-5x
     # Already at / near ATH
@@ -118,3 +123,123 @@ def normalize_batch_filter(value: str | None) -> str:
     if value in ATH_BATCHES:
         return value
     return "All"
+
+
+CMC_SLUG_BY_TICKER = {
+    "SPX": "spx6900",
+    "SOL": "solana",
+    "LINK": "chainlink",
+    "AAVE": "aave",
+    "OKB": "okb",
+    "ONDO": "ondo-finance",
+    "BGB": "bitget-token-new",
+    "DOGE": "dogecoin",
+    "HBAR": "hedera",
+    "BCH": "bitcoin-cash",
+    "PEPE": "pepe",
+    "AVAX": "avalanche",
+    "FET": "artificial-superintelligence-alliance",
+    "CRO": "cronos",
+    "SHIB": "shiba-inu",
+    "TIA": "celestia",
+    "POL": "polygon-ecosystem-token",
+    "ASTER": "astar",
+    "FIL": "filecoin",
+    "FLR": "flare",
+    "TRUMP": "official-trump",
+    "WLFI": "world-liberty-financial",
+    "PUMP": "pump-fun",
+    "SPX6900": "spx6900",
+    "SUI": "sui",
+    "ENA": "ethena",
+    "ADA": "cardano",
+    "VET": "vechain",
+    "MNT": "mantle",
+    "ETHFI": "ether-fi",
+    "APT": "aptos",
+    "ARB": "arbitrum",
+    "SEI": "sei-network",
+    "DOT": "polkadot-new",
+    "PENGU": "pudgy-penguins",
+    "BONK": "bonk",
+    "HYPE": "hyperliquid",
+    "XMR": "monero",
+    "XAUT": "tether-gold",
+    "PAXG": "pax-gold",
+    "ZEC": "zcash",
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "BNB": "bnb",
+    "XRP": "xrp",
+    "TRX": "tron",
+    "LEO": "unus-sed-leo",
+    "XLM": "stellar",
+    "LTC": "litecoin",
+    "TAO": "bittensor",
+    "UNI": "uniswap",
+    "QNT": "quant-network",
+    "NEXO": "nexo",
+    "SKY": "sky",
+    "MORPHO": "morpho",
+    "WBT": "whitebit",
+    "DEXE": "dexe",
+    "KCS": "kucoin-token",
+    "GT": "gatechain-token",
+    "HTX": "htx-token",
+    "XDC": "xdce-crowd-sale",
+    "JST": "just",
+    "VVV": "venice-token",
+}
+
+
+def get_cmc_url(ticker: str) -> str:
+    slug = CMC_SLUG_BY_TICKER.get((ticker or "").upper())
+    if slug:
+        return f"https://coinmarketcap.com/currencies/{slug}/"
+    return f"https://coinmarketcap.com/search/?q={(ticker or '').upper()}"
+
+
+BATCH_METHODOLOGY = {
+    "Top 100 3x-5x": {
+        "intent": (
+            "Top-100 tokens (by market cap) that are **3× to 5× below** the Oct 2025 cycle high "
+            "(price ≈ 20–33% of that ATH). Goal: which are **likely to reach at least that "
+            "Oct 2025 ATH again** in a future bull cycle."
+        ),
+        "current": (
+            "Weekly refresh via `ath_runner.py` / GitHub Action (Sundays 8:00 UTC). "
+            "Pulls **CoinGecko** top 100 by market cap, computes max price since **Oct 1 2025**, "
+            "assigns batch when drawdown is **3×–5×**, saves to `ath_history.db`."
+        ),
+        "gaps": (
+            "Verdicts scored by **Claude** (needs `ANTHROPIC_API_KEY`). "
+            "Optional free `COINGECKO_API_KEY` raises rate limits."
+        ),
+    },
+    "Top 100 >5x": {
+        "intent": (
+            "Top-100 tokens **more than 5× below** the Oct 2025 ATH (price < ~20% of that high). "
+            "Goal: which might still **recover to at least the Oct 2025 ATH**."
+        ),
+        "current": (
+            "Same weekly pipeline. Batch assigned when `ATH_Oct2025 / price > 5`. "
+            "Stored in SQLite with snapshot date for 4-week change tracking."
+        ),
+        "gaps": (
+            "AI verdicts via Claude; recovery likelihood judged per batch framing."
+        ),
+    },
+    "2x +potential ATH": {
+        "intent": (
+            "Top-100 tokens (**stablecoins excluded**) **not more than 3× down** from the Oct 2025 ATH "
+            "(price > ~33% of that high). Goal: which could **double the Oct 2025 ATH** (2× target column)."
+        ),
+        "current": (
+            "Batch assigned when drawdown **< 3×**. Stablecoins and gold tokens (PAXG, XAUT) skipped. "
+            "`target_2x` = 2 × Oct 2025 cycle high."
+        ),
+        "gaps": (
+            "AI assesses 2× Oct ATH potential; stablecoins/gold excluded from this batch."
+        ),
+    },
+}
