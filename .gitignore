@@ -7,3 +7,5 @@ __pycache__/
 candidates.csv
 weekly_report.xlsx
 weekly_run.log
+ath_run.log
+# ath_history.db is committed by weekly GitHub Action for Streamlit Cloud persistence
