@@ -10,6 +10,8 @@ import anthropic
 import httpx
 from dotenv import load_dotenv
 
+from token_filters import is_stablecoin
+
 load_dotenv()
 
 # ── Pipeline config ──────────────────────────────────────────────────────────
@@ -254,6 +256,9 @@ def search_dex_pairs(query: str, on_warning: Callable[[str], None] | None = None
 
 
 def pre_filter(pair: DexPair) -> tuple[bool, str]:
+    if is_stablecoin(pair.token_symbol, pair.token_name):
+        return False, "Stablecoin — excluded from analysis"
+
     if pair.liquidity_usd < MIN_LIQUIDITY_USD:
         return False, f"Liquidity ${pair.liquidity_usd:,.0f} below ${MIN_LIQUIDITY_USD:,.0f} min"
 
@@ -502,7 +507,11 @@ def load_candidates(n: int = 100) -> list[dict]:
         return []
     with open(CANDIDATES_CSV, newline="") as f:
         rows = list(csv.DictReader(f))
-    return list(reversed(rows[-n:]))
+    filtered = [
+        r for r in rows
+        if not is_stablecoin(r.get("ticker"), r.get("name"))
+    ]
+    return list(reversed(filtered[-n:]))
 
 
 def parse_liquidity_usd(value: str | float | int) -> float:

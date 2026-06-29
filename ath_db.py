@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from token_filters import is_ath_excluded
+
 ATH_DB_PATH = Path(__file__).resolve().parent / "ath_history.db"
 META_LAST_REFRESH = "last_refresh_at"
 META_LAST_SNAPSHOT = "last_snapshot_date"
@@ -167,7 +169,10 @@ def get_latest_assets() -> list[dict[str, Any]]:
             "SELECT * FROM ath_assets WHERE snapshot_id = ? ORDER BY rank ASC, ticker ASC",
             (snap["id"],),
         ).fetchall()
-        return [_row_to_asset(r, snap["snapshot_date"]) for r in rows]
+        return [
+            a for a in (_row_to_asset(r, snap["snapshot_date"]) for r in rows)
+            if not is_ath_excluded(a["ticker"], a.get("name"))
+        ]
 
 
 def _row_to_asset(row: sqlite3.Row, snapshot_date: str | None = None) -> dict[str, Any]:
@@ -256,6 +261,8 @@ def get_category_changes(weeks: int = 4) -> list[dict[str, Any]]:
     last_date = snaps[-1]["snapshot_date"]
 
     for ticker, history in by_ticker.items():
+        if is_ath_excluded(ticker, history[0].get("name")):
+            continue
         if len(history) < 2:
             continue
         earliest = history[0]

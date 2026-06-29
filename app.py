@@ -41,6 +41,7 @@ from ath_db import (
     list_snapshots,
 )
 from ath_refresh import run_ath_refresh
+from token_filters import is_ath_excluded, is_stablecoin
 
 ATH_BATCHES = [
     "Top 100 3x-5x",
@@ -767,6 +768,9 @@ def render_analyser_tab():
         query_to_run = prefill_query
 
     if query_to_run:
+        if is_stablecoin(query_to_run, query_to_run):
+            st.warning("Stablecoins are excluded from analysis.")
+            return
         if not api_key:
             st.error("Analysis is unavailable — the server API key is not configured.")
             return
@@ -1441,6 +1445,7 @@ def render_ath_tracker_tab():
                 st.markdown("---")
 
     rows = get_latest_assets() if live else list(ATH_DATA)
+    rows = [r for r in rows if not is_ath_excluded(r.get("ticker"), r.get("name"))]
     if batch_filter != "All":
         rows = [r for r in rows if r.get("batch") == batch_filter]
     if verdict_filter:

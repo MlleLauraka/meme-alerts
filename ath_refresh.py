@@ -13,19 +13,15 @@ from ath_data import BATCH_2X, BATCH_3X_5X, BATCH_GT_5X, CMC_SLUG_BY_TICKER
 from ath_db import init_db, save_snapshot, set_meta
 from ath_ai_verdict import apply_ai_verdicts
 from pipeline import get_api_key_from_env
+from token_filters import is_ath_excluded
 
 # Oct 1 2025 00:00:00 UTC — post-Oct 2025 cycle-high window start
 OCT_2025_UNIX = int(datetime(2025, 10, 1, tzinfo=timezone.utc).timestamp())
 
 COINGECKO_API_BASE = "https://api.coingecko.com/api/v3"
 
-STABLECOIN_SYMBOLS = {
-    "USDT", "USDC", "DAI", "USDE", "FDUSD", "TUSD", "USDD", "PYUSD", "USDS",
-    "FRAX", "LUSD", "CRVUSD", "GUSD", "BUSD", "EURC", "USD1", "USDT0", "USD0",
-    "USDBC", "USDG", "USDP",
-}
-
-COMMODITY_OR_INDEX_SYMBOLS = {"PAXG", "XAUT", "SPX", "SPX6900"}
+TOP100_TARGET = 100
+TOP100_MAX_PAGES = 5
 
 
 def _http_client() -> httpx.Client:
@@ -48,9 +44,8 @@ def _today_iso() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
-def _is_excluded_symbol(symbol: str) -> bool:
-    sym = (symbol or "").upper()
-    return sym in STABLECOIN_SYMBOLS or sym in COMMODITY_OR_INDEX_SYMBOLS
+def _is_excluded_symbol(symbol: str, name: str | None = None, coingecko_id: str | None = None) -> bool:
+    return is_ath_excluded(symbol, name, coingecko_id)
 
 
 def _assign_batch(drawdown_multiple: float | None, symbol: str) -> str | None:
@@ -123,29 +118,49 @@ def _auto_notes(batch: str | None, verdict: str, rank: int, multiple: float | No
     return " · ".join(parts)
 
 
-def fetch_coingecko_top100(client: httpx.Client) -> list[dict[str, Any]]:
-    resp = client.get(
-        f"{COINGECKO_API_BASE}/coins/markets",
-        params={
-            "vs_currency": "usd",
-            "order": "market_cap_desc",
-            "per_page": 100,
-            "page": 1,
-            "sparkline": "false",
-        },
-        headers=_coingecko_headers(),
-    )
-    resp.raise_for_status()
-    return [
-        {
-            "coingecko_id": c["id"],
-            "ticker": (c.get("symbol") or "").upper(),
-            "name": c.get("name") or c["id"],
-            "rank": c.get("market_cap_rank") or 999,
-            "price_usd": float(c.get("current_price") or 0),
-        }
-        for c in resp.json()
-    ]
+def fetch_coingecko_top100(client: httpx.Client, *, limit: int = TOP100_TARGET) -> list[dict[str, Any]]:
+    """Top coins by market cap, skipping stablecoins and ATH-excluded symbols."""
+    coins: list[dict[str, Any]] = []
+    page = 1
+
+    while len(coins) < limit and page <= TOP100_MAX_PAGES:
+        resp = client.get(
+            f"{COINGECKO_API_BASE}/coins/markets",
+            params={
+                "vs_currency": "usd",
+                "order": "market_cap_desc",
+                "per_page": 100,
+                "page": page,
+                "sparkline": "false",
+            },
+            headers=_coingecko_headers(),
+        )
+        resp.raise_for_status()
+        batch = resp.json()
+        if not batch:
+            break
+
+        for c in batch:
+            ticker = (c.get("symbol") or "").upper()
+            name = c.get("name") or c["id"]
+            cg_id = c.get("id")
+            if _is_excluded_symbol(ticker, name, cg_id):
+                continue
+            coins.append(
+                {
+                    "coingecko_id": cg_id,
+                    "ticker": ticker,
+                    "name": name,
+                    "rank": c.get("market_cap_rank") or 999,
+                    "price_usd": float(c.get("current_price") or 0),
+                }
+            )
+            if len(coins) >= limit:
+                break
+
+        page += 1
+
+    return coins
 
 
 def fetch_oct2025_ath_coingecko(client: httpx.Client, coingecko_id: str) -> float | None:
@@ -170,7 +185,7 @@ def build_asset_row(coin: dict[str, Any], ath_oct2025: float | None) -> dict[str
     ticker = coin["ticker"]
     rank = int(coin.get("rank") or 999)
 
-    if _is_excluded_symbol(ticker):
+    if _is_excluded_symbol(ticker, coin.get("name"), coin.get("coingecko_id")):
         return None
 
     if not ath_oct2025 or ath_oct2025 <= 0:
@@ -221,8 +236,10 @@ def run_ath_refresh(
 
     with _http_client() as client:
         if on_progress:
-            label = "CoinGecko top 100 (with API key)…" if cg_key else "CoinGecko top 100…"
-            on_progress(f"Fetching {label}")
+            label = "CoinGecko top 100, stablecoins excluded"
+            if cg_key:
+                label += " (with API key)"
+            on_progress(f"Fetching {label}…")
         try:
             coins = fetch_coingecko_top100(client)
         except Exception as exc:
