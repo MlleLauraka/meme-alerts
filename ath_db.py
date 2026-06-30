@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from token_filters import is_ath_excluded
+from ath_data import is_ath_excluded
 
 ATH_DB_PATH = Path(__file__).resolve().parent / "ath_history.db"
 META_LAST_REFRESH = "last_refresh_at"

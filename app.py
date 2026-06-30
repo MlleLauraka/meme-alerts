@@ -31,7 +31,14 @@ from weekly_report import (
     load_snapshots,
     run_weekly_scan,
 )
-from ath_data import ATH_DATA, VERDICT_ORDER, BATCH_METHODOLOGY, get_cmc_url
+from ath_data import (
+    ATH_DATA,
+    VERDICT_ORDER,
+    BATCH_METHODOLOGY,
+    get_cmc_url,
+    is_ath_excluded,
+    is_excluded_from_analysis,
+)
 from ath_db import (
     get_category_changes,
     get_last_refresh,
@@ -41,7 +48,6 @@ from ath_db import (
     list_snapshots,
 )
 from ath_refresh import run_ath_refresh
-from token_filters import is_ath_excluded, is_excluded_from_analysis
 
 ATH_BATCHES = [
     "Top 100 3x-5x",

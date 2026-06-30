@@ -9,11 +9,10 @@ from typing import Any, Callable
 
 import httpx
 
-from ath_data import BATCH_2X, BATCH_3X_5X, BATCH_GT_5X, CMC_SLUG_BY_TICKER
+from ath_data import BATCH_2X, BATCH_3X_5X, BATCH_GT_5X, CMC_SLUG_BY_TICKER, is_ath_excluded
 from ath_db import init_db, save_snapshot, set_meta
 from ath_ai_verdict import apply_ai_verdicts
 from pipeline import get_api_key_from_env
-from token_filters import is_ath_excluded
 
 # Oct 1 2025 00:00:00 UTC — post-Oct 2025 cycle-high window start
 OCT_2025_UNIX = int(datetime(2025, 10, 1, tzinfo=timezone.utc).timestamp())

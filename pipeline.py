@@ -10,7 +10,7 @@ import anthropic
 import httpx
 from dotenv import load_dotenv
 
-from token_filters import is_excluded_from_analysis
+from ath_data import is_excluded_from_analysis
 
 load_dotenv()
 
