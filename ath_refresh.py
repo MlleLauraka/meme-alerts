@@ -21,7 +21,7 @@ OCT_2025_UNIX = int(datetime(2025, 10, 1, tzinfo=timezone.utc).timestamp())
 COINGECKO_API_BASE = "https://api.coingecko.com/api/v3"
 
 TOP100_TARGET = 100
-TOP100_MAX_PAGES = 5
+TOP100_MAX_PAGES = 8
 
 
 def _http_client() -> httpx.Client:
@@ -236,7 +236,7 @@ def run_ath_refresh(
 
     with _http_client() as client:
         if on_progress:
-            label = "CoinGecko top 100, stablecoins excluded"
+            label = "CoinGecko top 100, stables/RWAs excluded"
             if cg_key:
                 label += " (with API key)"
             on_progress(f"Fetching {label}…")

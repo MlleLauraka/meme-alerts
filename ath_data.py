@@ -231,15 +231,15 @@ BATCH_METHODOLOGY = {
     },
     "2x +potential ATH": {
         "intent": (
-            "Top-100 tokens (**stablecoins excluded**) **not more than 3× down** from the Oct 2025 ATH "
+            "Top-100 **crypto** tokens (**stablecoins & RWAs excluded**) **not more than 3× down** from the Oct 2025 ATH "
             "(price > ~33% of that high). Goal: which could **double the Oct 2025 ATH** (2× target column)."
         ),
         "current": (
-            "Batch assigned when drawdown **< 3×**. Stablecoins and gold tokens (PAXG, XAUT) skipped. "
+            "Batch assigned when drawdown **< 3×**. Stablecoins, RWAs, and gold tokens (PAXG, XAUT) skipped. "
             "`target_2x` = 2 × Oct 2025 cycle high."
         ),
         "gaps": (
-            "AI assesses 2× Oct ATH potential; stablecoins/gold excluded from this batch."
+            "AI assesses 2× Oct ATH potential; stablecoins, RWAs, and gold excluded from this batch."
         ),
     },
 }

@@ -10,7 +10,7 @@ import anthropic
 import httpx
 from dotenv import load_dotenv
 
-from token_filters import is_stablecoin
+from token_filters import is_excluded_from_analysis
 
 load_dotenv()
 
@@ -256,8 +256,8 @@ def search_dex_pairs(query: str, on_warning: Callable[[str], None] | None = None
 
 
 def pre_filter(pair: DexPair) -> tuple[bool, str]:
-    if is_stablecoin(pair.token_symbol, pair.token_name):
-        return False, "Stablecoin — excluded from analysis"
+    if is_excluded_from_analysis(pair.token_symbol, pair.token_name):
+        return False, "Stablecoin / RWA — excluded from analysis"
 
     if pair.liquidity_usd < MIN_LIQUIDITY_USD:
         return False, f"Liquidity ${pair.liquidity_usd:,.0f} below ${MIN_LIQUIDITY_USD:,.0f} min"
@@ -509,7 +509,7 @@ def load_candidates(n: int = 100) -> list[dict]:
         rows = list(csv.DictReader(f))
     filtered = [
         r for r in rows
-        if not is_stablecoin(r.get("ticker"), r.get("name"))
+        if not is_excluded_from_analysis(r.get("ticker"), r.get("name"))
     ]
     return list(reversed(filtered[-n:]))
 
