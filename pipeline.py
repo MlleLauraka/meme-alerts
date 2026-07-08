@@ -69,6 +69,8 @@ V1: LP burned or locked, V2: zero buy/sell tax, V3: no presale/VC allocation,
 V4: no utility/roadmap promised, V5: team wallet under 10% of supply,
 V6: meme predates the token
 
+Only add a code to vetoFails when you have specific evidence. If LP/tax/renounce status is unknown from the data provided, PASS that veto and note uncertainty in findings — never guess a veto fail.
+
 The current date is June 2026. Bitcoin's last halving was April 2024.
 We are ~26 months post-halving — a subdued phase for memes. Next halving ~April 2028.
 
@@ -533,6 +535,7 @@ def score_coin_hybrid(pair: DexPair, quant: dict, api_key: str | None = None) ->
         message = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1000,
+            temperature=0,
             system=HYBRID_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_msg}],
         )

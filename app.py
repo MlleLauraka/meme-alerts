@@ -487,6 +487,8 @@ E · Launch velocity (10pts max): E1=72hr price action(6), E2=organic influencer
 Veto checks (any fail = disqualify regardless of score):
 V1: LP burned or locked, V2: zero buy/sell tax, V3: no presale/VC allocation, V4: no utility/roadmap promised, V5: team wallet under 10% of supply, V6: meme predates the token
 
+Only add a code to vetoFails when you have specific evidence. If on-chain status is unknown, PASS that veto and note uncertainty in findings — never guess a veto fail.
+
 Benchmark cohort (verified $1B+ coins, avg=81): PEPE=91, PNUT=90, WIF=86, GOAT=85, POPCAT=85, BOME=74
 TRUMP was disqualified (80% insider supply, 3-year vesting) despite $27B peak — outlier excluded from avg.
 
@@ -801,49 +803,58 @@ def render_analyser_tab():
         )
         with st.spinner(f"Resolving {label} on DexScreener and scoring…"):
             try:
-                if resolved_pair:
-                    user_content = (
-                        "Score this memecoin against the Inversal Framework.\n\n"
-                        f"{format_dex_context_for_analysis(resolved_pair, query_to_run)}\n\n"
-                        "Use the live DexScreener metrics above plus your knowledge of the "
-                        "token's meme narrative and community. If data is limited, estimate "
-                        "conservatively and note confidence level."
+                if resolved_pair and resolved_pair.market_cap > MCAP_MAX:
+                    st.info(
+                        f"This token is **~${resolved_pair.market_cap / 1e6:.0f}M mcap** — outside the "
+                        f"new-runner window (${MCAP_MIN / 1e6:.0f}M–${MCAP_MAX / 1e6:.0f}M). "
+                        "Analysis still runs for research, but the live pipeline would not flag it."
                     )
+
+                if resolved_pair:
+                    quant = quant_score(resolved_pair)
+                    hybrid = score_coin_hybrid(resolved_pair, quant, api_key=api_key)
+                    if not hybrid:
+                        st.error("Scoring failed — API error. Try again in a moment.")
+                        return
+                    result = dict(hybrid)
+                    result["query"] = query_to_run
+                    result["token_address"] = resolved_pair.token_address or query_to_run.strip()
+                    result["scoring_method"] = "hybrid+dex"
                 else:
                     user_content = (
                         f"Score this memecoin against the Inversal Framework: {query_to_run}. "
                         "Use your best available knowledge. If data is limited, estimate "
                         "conservatively and note confidence level."
                     )
+                    client = make_anthropic_client(api_key)
+                    message = client.messages.create(
+                        model="claude-sonnet-4-6",
+                        max_tokens=1500,
+                        temperature=0,
+                        system=SYSTEM_PROMPT,
+                        messages=[{
+                            "role": "user",
+                            "content": user_content,
+                        }]
+                    )
+                    raw = message.content[0].text
+                    clean = re.sub(r"```json|```", "", raw).strip()
+                    result = json.loads(clean)
 
-                client = make_anthropic_client(api_key)
-                message = client.messages.create(
-                    model="claude-sonnet-4-6",
-                    max_tokens=1500,
-                    system=SYSTEM_PROMPT,
-                    messages=[{
-                        "role": "user",
-                        "content": user_content,
-                    }]
-                )
-                raw = message.content[0].text
-                clean = re.sub(r"```json|```", "", raw).strip()
-                result = json.loads(clean)
+                    total = round(sum(result["scores"].values()))
+                    vetoed = len(result.get("vetoFails", [])) > 0
+                    result["total"] = total
+                    result["vetoed"] = vetoed
+                    result["query"] = query_to_run
+                    result["timestamp"] = datetime.now().strftime("%H:%M:%S")
+                    result["scoring_method"] = "claude-only"
 
-                total = round(sum(result["scores"].values()))
-                vetoed = len(result.get("vetoFails", [])) > 0
-                result["total"] = total
-                result["vetoed"] = vetoed
-                result["query"] = query_to_run
-                result["timestamp"] = datetime.now().strftime("%H:%M:%S")
-                if resolved_pair:
-                    result["ticker"] = resolved_pair.token_symbol
-                    result["name"] = resolved_pair.token_name
-                    result["chain"] = resolved_pair.chain_id
-                    result["launched"] = resolved_pair.created_at.strftime("%b %Y")
-                    result["currentMcap"] = f"~${resolved_pair.market_cap / 1e6:.1f}M"
-                    result["pair_url"] = resolved_pair.pair_url
-                    result["token_address"] = resolved_pair.token_address or query_to_run.strip()
+                if not result.get("timestamp"):
+                    result["timestamp"] = datetime.now().strftime("%H:%M:%S")
+                if "total" not in result:
+                    result["total"] = round(sum(result["scores"].values()))
+                if "vetoed" not in result:
+                    result["vetoed"] = len(result.get("vetoFails", [])) > 0
 
                 st.session_state.current_result = result
                 st.session_state.history.insert(0, result)
@@ -917,7 +928,15 @@ def render_analyser_tab():
             st.link_button("View on DexScreener ↗", result["pair_url"])
         conf = result.get("confidence", "medium")
         conf_color = {"high": "#16a34a", "medium": "#d97706", "low": "#dc2626"}.get(conf, "#d97706")
-        st.markdown(f"<span style='font-size:0.78rem; color:{conf_color}; font-weight:600'>Confidence: {conf.upper()}</span> — <span style='font-size:0.78rem; color:#94a3b8'>{result.get('confidenceNote','')}</span>", unsafe_allow_html=True)
+        method = result.get("scoring_method", "claude-only")
+        st.markdown(
+            f"<span style='font-size:0.78rem; color:{conf_color}; font-weight:600'>"
+            f"Confidence: {conf.upper()}</span> — "
+            f"<span style='font-size:0.78rem; color:#94a3b8'>"
+            f"{result.get('confidenceNote','')}</span>",
+            unsafe_allow_html=True,
+        )
+        st.caption(f"Scoring: **{method}** · Section C/E1 from DexScreener when contract resolved.")
 
     with r1c2:
         score_display = "DQ" if vetoed else str(total)
@@ -939,7 +958,7 @@ def render_analyser_tab():
         """, unsafe_allow_html=True)
         if vetoed:
             veto_list = ", ".join(result.get("vetoFails", []))
-            st.markdown(f"""<div class='veto-box'>Veto fail(s): {veto_list} — disqualified regardless of score</div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='veto-box'>Veto fail(s): {veto_list} — disqualified regardless of score (raw total was {total}/100)</div>""", unsafe_allow_html=True)
         else:
             if gap >= 0:
                 st.success(f"Above threshold — structurally matches $1B cohort")
