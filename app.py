@@ -16,10 +16,13 @@ from pipeline import (
     TOKEN_AGE_MIN_HOURS,
     load_candidates,
     log_candidate,
+    looks_like_contract_address,
     make_anthropic_client,
     parse_liquidity_usd,
     pre_filter,
     quant_score,
+    resolve_dex_query,
+    format_dex_context_for_analysis,
     score_coin_hybrid,
     search_dex_pairs,
 )
@@ -731,8 +734,8 @@ def render_analyser_tab():
     st.markdown("## Coin analyser — run the runner indicator")
 
     st.markdown("""
-    Enter any memecoin ticker or name. The AI will research it, score it against all five framework
-    sections, check the six veto criteria, and calculate the **runner gap** vs the \\$1B benchmark cohort (avg = 81).
+    Enter a **ticker**, **token name**, or **contract address** (Solana or `0x…` EVM).
+    DexScreener resolves live on-chain data first; Claude then scores against the framework.
     """)
 
     api_key = get_api_key()
@@ -751,8 +754,8 @@ def render_analyser_tab():
     col_input, col_btn = st.columns([3, 1])
     with col_input:
         coin_query = st.text_input(
-            "Coin name or ticker",
-            placeholder="e.g. BONK, MOODENG, SHIB, FLOKI...",
+            "Coin name, ticker, or contract address",
+            placeholder="BONK · MOODENG · 9cRC…pump · 0x6982…",
             label_visibility="collapsed",
             key="coin_query_input",
         )
@@ -774,14 +777,45 @@ def render_analyser_tab():
         query_to_run = prefill_query
 
     if query_to_run:
-        if is_excluded_from_analysis(query_to_run, query_to_run):
+        resolved_pair = resolve_dex_query(query_to_run)
+        if looks_like_contract_address(query_to_run) and not resolved_pair:
+            st.error(
+                "No DexScreener pairs found for that contract address. "
+                "Check the address (Solana mint or `chain:address`)."
+            )
+            return
+
+        symbol = resolved_pair.token_symbol if resolved_pair else query_to_run
+        name = resolved_pair.token_name if resolved_pair else query_to_run
+        if is_excluded_from_analysis(symbol, name):
             st.warning("Stablecoins and RWAs are excluded from analysis.")
             return
         if not api_key:
             st.error("Analysis is unavailable — the server API key is not configured.")
             return
-        with st.spinner(f"Researching {query_to_run.upper()} and scoring against the framework..."):
+
+        label = (
+            f"{resolved_pair.token_symbol} ({resolved_pair.token_name})"
+            if resolved_pair
+            else query_to_run
+        )
+        with st.spinner(f"Resolving {label} on DexScreener and scoring…"):
             try:
+                if resolved_pair:
+                    user_content = (
+                        "Score this memecoin against the Inversal Framework.\n\n"
+                        f"{format_dex_context_for_analysis(resolved_pair, query_to_run)}\n\n"
+                        "Use the live DexScreener metrics above plus your knowledge of the "
+                        "token's meme narrative and community. If data is limited, estimate "
+                        "conservatively and note confidence level."
+                    )
+                else:
+                    user_content = (
+                        f"Score this memecoin against the Inversal Framework: {query_to_run}. "
+                        "Use your best available knowledge. If data is limited, estimate "
+                        "conservatively and note confidence level."
+                    )
+
                 client = make_anthropic_client(api_key)
                 message = client.messages.create(
                     model="claude-sonnet-4-6",
@@ -789,7 +823,7 @@ def render_analyser_tab():
                     system=SYSTEM_PROMPT,
                     messages=[{
                         "role": "user",
-                        "content": f"Score this memecoin against the Inversal Framework: {query_to_run}. Use your best available knowledge. If data is limited, estimate conservatively and note confidence level."
+                        "content": user_content,
                     }]
                 )
                 raw = message.content[0].text
@@ -802,6 +836,14 @@ def render_analyser_tab():
                 result["vetoed"] = vetoed
                 result["query"] = query_to_run
                 result["timestamp"] = datetime.now().strftime("%H:%M:%S")
+                if resolved_pair:
+                    result["ticker"] = resolved_pair.token_symbol
+                    result["name"] = resolved_pair.token_name
+                    result["chain"] = resolved_pair.chain_id
+                    result["launched"] = resolved_pair.created_at.strftime("%b %Y")
+                    result["currentMcap"] = f"~${resolved_pair.market_cap / 1e6:.1f}M"
+                    result["pair_url"] = resolved_pair.pair_url
+                    result["token_address"] = resolved_pair.token_address or query_to_run.strip()
 
                 st.session_state.current_result = result
                 st.session_state.history.insert(0, result)
@@ -871,6 +913,8 @@ def render_analyser_tab():
             Mcap {result.get('currentMcap','?')} · ATH {result.get('athMcap','?')}
         </div>
         """, unsafe_allow_html=True)
+        if result.get("pair_url"):
+            st.link_button("View on DexScreener ↗", result["pair_url"])
         conf = result.get("confidence", "medium")
         conf_color = {"high": "#16a34a", "medium": "#d97706", "low": "#dc2626"}.get(conf, "#d97706")
         st.markdown(f"<span style='font-size:0.78rem; color:{conf_color}; font-weight:600'>Confidence: {conf.upper()}</span> — <span style='font-size:0.78rem; color:#94a3b8'>{result.get('confidenceNote','')}</span>", unsafe_allow_html=True)

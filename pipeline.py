@@ -152,6 +152,7 @@ class DexPair:
     pair_address: str
     token_name: str
     token_symbol: str
+    token_address: str
     chain_id: str
     dex_id: str
     price_usd: float
@@ -196,6 +197,7 @@ def _pair_from_api(raw: dict) -> DexPair | None:
         pair_address=pair_address,
         token_name=base.get("name") or quote.get("name") or "Unknown",
         token_symbol=(base.get("symbol") or quote.get("symbol") or "?").upper(),
+        token_address=base.get("address") or quote.get("address") or "",
         chain_id=chain_id,
         dex_id=raw.get("dexId") or "",
         price_usd=_safe_float(raw.get("priceUsd")),
@@ -326,6 +328,42 @@ def search_dex_pairs(query: str, on_warning: Callable[[str], None] | None = None
         if on_warning:
             on_warning(f"DexScreener search failed for '{query}': {exc}")
         return []
+
+
+def looks_like_contract_address(query: str) -> bool:
+    q = (query or "").strip()
+    if not q:
+        return False
+    if EVM_ADDRESS_RE.match(q) or CHAIN_PREFIX_RE.match(q):
+        return True
+    return len(q) >= 32 and bool(SOLANA_ADDRESS_RE.match(q))
+
+
+def resolve_dex_query(query: str) -> DexPair | None:
+    """Return the most liquid DexScreener pair for a ticker, name, or contract address."""
+    pairs = search_dex_pairs(query)
+    return pairs[0] if pairs else None
+
+
+def format_dex_context_for_analysis(pair: DexPair, original_query: str) -> str:
+    age_hours = (datetime.now(timezone.utc) - pair.created_at).total_seconds() / 3600
+    contract = pair.token_address or original_query.strip()
+    return (
+        f"Live DexScreener data (use as ground truth for on-chain metrics):\n"
+        f"- Ticker: {pair.token_symbol}\n"
+        f"- Name: {pair.token_name}\n"
+        f"- Chain: {pair.chain_id}\n"
+        f"- Token contract: {contract}\n"
+        f"- Pair: {pair.pair_address}\n"
+        f"- Market cap: ${pair.market_cap:,.0f}\n"
+        f"- Liquidity: ${pair.liquidity_usd:,.0f}\n"
+        f"- Volume 24h: ${pair.volume_24h:,.0f}\n"
+        f"- Price change 1h/6h/24h: {pair.price_change_1h:.1f}% / "
+        f"{pair.price_change_6h:.1f}% / {pair.price_change_24h:.1f}%\n"
+        f"- Buy/sell ratio 24h: {pair.buyer_sell_ratio:.2f}\n"
+        f"- Token age: {age_hours:.1f} hours\n"
+        f"- DexScreener: {pair.pair_url}"
+    )
 
 
 def fetch_dex_pairs(chain: str, on_warning: Callable[[str], None] | None = None) -> list[DexPair]:
