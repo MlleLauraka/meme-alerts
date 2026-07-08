@@ -5,7 +5,6 @@ __pycache__/
 .DS_Store
 .streamlit/secrets.toml
 candidates.csv
-weekly_report.xlsx
 weekly_run.log
 ath_run.log
-# ath_history.db is committed by weekly GitHub Action for Streamlit Cloud persistence
+# ath_history.db and weekly_report.xlsx committed by GitHub Actions for Streamlit Cloud

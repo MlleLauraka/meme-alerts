@@ -1196,8 +1196,8 @@ def render_weekly_report_tab():
         st.info("No weekly report data yet.")
         st.caption(
             "Weekly reports come from Monday pipeline scans saved to an Excel file. "
-            "On this hosted app, use **Run weekly report now** in the sidebar — "
-            "it takes several minutes and scans all chains."
+            "Auto-updates **Mondays 9:00 UTC** via GitHub Actions, or use "
+            "**Run weekly report now** in the sidebar."
         )
         return
 
@@ -1446,8 +1446,8 @@ def render_ath_tracker_tab():
         )
     else:
         st.caption(
-            "Showing **embedded fallback** data (Jun 2026). Run **Refresh ATH data** in the sidebar "
-            "or wait for the weekly job to populate live top-100 batches."
+            "Showing **embedded fallback** data (Jun 2026). Live data refreshes "
+            "**Sundays 8:00 UTC** (GitHub Actions) or use **Refresh ATH data** in the sidebar."
         )
 
     f1, f2, f3 = st.columns([2, 2, 2])
@@ -1695,7 +1695,14 @@ def main():
 
         st.markdown("---")
         st.markdown("### Weekly report")
-        st.caption("Runs every Monday (cron). Appends to weekly_report.xlsx.")
+        weekly_meta = get_report_meta()
+        if weekly_meta.get("last_run"):
+            st.caption(
+                f"Last run: {weekly_meta['last_run']} · "
+                f"auto Mondays 9:00 UTC · data: DexScreener + Claude"
+            )
+        else:
+            st.caption("No data yet · auto Mondays 9:00 UTC · or run manually below")
         if st.button("Run weekly report now ↗", use_container_width=True):
             api_key = get_api_key()
             if not api_key:
@@ -1707,6 +1714,7 @@ def main():
                         st.sidebar.success(
                             f"Weekly report updated — {len(results)} tokens appended."
                         )
+                        st.rerun()
                     except Exception as exc:
                         st.sidebar.error(f"Weekly run failed: {exc}")
 
