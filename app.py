@@ -1556,7 +1556,11 @@ def main():
                 f"age {TOKEN_AGE_MIN_HOURS}h–{TOKEN_AGE_MAX_HOURS}h. "
                 f"Use Tab 2 for coins like BONK."
             )
-            manual_q = st.text_input("Token name or address", placeholder="e.g. BONK or 0x...")
+            manual_q = st.text_input(
+                "Search DexScreener",
+                placeholder="BONK · Bonk · solana:DezX… · 0x6982…",
+                help="Token name, ticker, protocol/meta slug, or contract address (optionally chain:address).",
+            )
             run_manual = st.button("Scan ↗", type="primary", use_container_width=True)
             if run_manual and manual_q.strip():
                 api_key = get_api_key()

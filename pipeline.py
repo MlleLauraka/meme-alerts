@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
+from urllib.parse import quote
 
 import anthropic
 import httpx
@@ -13,6 +14,19 @@ from dotenv import load_dotenv
 from ath_data import is_excluded_from_analysis
 
 load_dotenv()
+
+DEXSCREENER_API = "https://api.dexscreener.com"
+SEARCH_RESULT_LIMIT = 20
+EVM_ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
+SOLANA_ADDRESS_RE = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
+CHAIN_PREFIX_RE = re.compile(
+    r"^(solana|ethereum|base|bsc|arbitrum|polygon|optimism|avax)"
+    r"[/:\s]+(.+)$",
+    re.IGNORECASE,
+)
+PAIR_LOOKUP_CHAINS = [
+    "solana", "ethereum", "base", "bsc", "arbitrum", "polygon", "optimism", "avax",
+]
 
 # ── Pipeline config ──────────────────────────────────────────────────────────
 CHAINS = ["solana", "ethereum", "base", "bsc"]
@@ -210,19 +224,120 @@ def _dedupe_pairs(pairs: list["DexPair"]) -> list["DexPair"]:
     return unique
 
 
+def _extract_raw_pairs(payload: dict | list | None) -> list[dict]:
+    if not payload:
+        return []
+    if isinstance(payload, list):
+        return [p for p in payload if isinstance(p, dict)]
+    if isinstance(payload, dict):
+        pairs = payload.get("pairs")
+        if isinstance(pairs, list):
+            return [p for p in pairs if isinstance(p, dict)]
+    return []
+
+
+def _raw_pairs_to_dex_pairs(raw_pairs: list[dict]) -> list[DexPair]:
+    pairs: list[DexPair] = []
+    for raw in raw_pairs:
+        pair = _pair_from_api(raw)
+        if pair:
+            pairs.append(pair)
+    return pairs
+
+
+def _protocol_slug(query: str) -> str:
+    slug = query.strip().lower().replace("_", "-")
+    slug = re.sub(r"[^a-z0-9-]+", "-", slug)
+    return re.sub(r"-+", "-", slug).strip("-")
+
+
+def _fetch_pairs_from_url(url: str) -> list[DexPair]:
+    payload = _http_get_json(url)
+    return _raw_pairs_to_dex_pairs(_extract_raw_pairs(payload))
+
+
+def _fetch_pairs_by_token_address(address: str) -> list[DexPair]:
+    return _fetch_pairs_from_url(f"{DEXSCREENER_API}/latest/dex/tokens/{quote(address, safe='')}")
+
+
+def _fetch_pairs_by_chain_token(chain: str, address: str) -> list[DexPair]:
+    chain = chain.lower()
+    addr = quote(address.strip(), safe="")
+    pairs = _fetch_pairs_from_url(f"{DEXSCREENER_API}/token-pairs/v1/{chain}/{addr}")
+    if pairs:
+        return pairs
+    return _fetch_pairs_from_url(f"{DEXSCREENER_API}/latest/dex/pairs/{chain}/{addr}")
+
+
+def _fetch_pairs_by_pair_address(address: str) -> list[DexPair]:
+    addr = quote(address.strip(), safe="")
+    found: list[DexPair] = []
+    for chain in PAIR_LOOKUP_CHAINS:
+        found.extend(
+            _fetch_pairs_from_url(f"{DEXSCREENER_API}/latest/dex/pairs/{chain}/{addr}")
+        )
+        if found:
+            break
+    return found
+
+
+def _fetch_pairs_by_search(query: str) -> list[DexPair]:
+    q = quote(query.strip())
+    return _fetch_pairs_from_url(f"{DEXSCREENER_API}/latest/dex/search?q={q}")
+
+
+def _fetch_pairs_by_protocol_slug(slug: str) -> list[DexPair]:
+    if not slug:
+        return []
+    return _fetch_pairs_from_url(f"{DEXSCREENER_API}/metas/meta/v1/{quote(slug, safe='')}")
+
+
+def search_dex_pairs(query: str, on_warning: Callable[[str], None] | None = None) -> list[DexPair]:
+    """Resolve DexScreener pairs by protocol slug, token name/symbol, or contract address."""
+    q = (query or "").strip()
+    if not q:
+        return []
+
+    try:
+        pairs: list[DexPair] = []
+        chain_match = CHAIN_PREFIX_RE.match(q)
+
+        if chain_match:
+            chain, address = chain_match.group(1).lower(), chain_match.group(2).strip()
+            pairs.extend(_fetch_pairs_by_chain_token(chain, address))
+        elif EVM_ADDRESS_RE.match(q):
+            pairs.extend(_fetch_pairs_by_token_address(q))
+            if not pairs:
+                pairs.extend(_fetch_pairs_by_pair_address(q))
+        elif len(q) >= 32 and SOLANA_ADDRESS_RE.match(q):
+            pairs.extend(_fetch_pairs_by_token_address(q))
+            if not pairs:
+                pairs.extend(_fetch_pairs_by_pair_address(q))
+        else:
+            pairs.extend(_fetch_pairs_by_search(q))
+            slug = _protocol_slug(q)
+            if slug:
+                pairs.extend(_fetch_pairs_by_protocol_slug(slug))
+
+        pairs = _dedupe_pairs(pairs)
+        pairs.sort(key=lambda p: p.liquidity_usd, reverse=True)
+        return pairs[:SEARCH_RESULT_LIMIT]
+    except Exception as exc:
+        if on_warning:
+            on_warning(f"DexScreener search failed for '{query}': {exc}")
+        return []
+
+
 def fetch_dex_pairs(chain: str, on_warning: Callable[[str], None] | None = None) -> list[DexPair]:
     pairs: list[DexPair] = []
     urls = [
-        f"https://api.dexscreener.com/latest/dex/search?q={chain}+meme",
-        f"https://api.dexscreener.com/latest/dex/search?q={chain}",
+        f"{DEXSCREENER_API}/latest/dex/search?q={quote(chain + ' meme')}",
+        f"{DEXSCREENER_API}/latest/dex/search?q={quote(chain)}",
     ]
 
     try:
         for url in urls:
-            payload = _http_get_json(url)
-            if not payload or not isinstance(payload, dict):
-                continue
-            for raw in payload.get("pairs") or []:
+            for raw in _extract_raw_pairs(_http_get_json(url)):
                 if (raw.get("chainId") or "").lower() != chain.lower():
                     continue
                 pair = _pair_from_api(raw)
@@ -234,25 +349,6 @@ def fetch_dex_pairs(chain: str, on_warning: Callable[[str], None] | None = None)
         return []
 
     return _dedupe_pairs(pairs)
-
-
-def search_dex_pairs(query: str, on_warning: Callable[[str], None] | None = None) -> list[DexPair]:
-    try:
-        payload = _http_get_json(f"https://api.dexscreener.com/latest/dex/search?q={query}")
-        if not payload or not isinstance(payload, dict):
-            return []
-        pairs = []
-        for raw in payload.get("pairs") or []:
-            pair = _pair_from_api(raw)
-            if pair:
-                pairs.append(pair)
-        pairs = _dedupe_pairs(pairs)
-        pairs.sort(key=lambda p: p.liquidity_usd, reverse=True)
-        return pairs[:10]
-    except Exception as exc:
-        if on_warning:
-            on_warning(f"DexScreener search failed for '{query}': {exc}")
-        return []
 
 
 def pre_filter(pair: DexPair) -> tuple[bool, str]:
