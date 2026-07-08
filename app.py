@@ -50,6 +50,7 @@ from ath_db import (
     has_live_data,
     list_snapshots,
 )
+from chain_explorer import fetch_holder_breakdown, get_explorer_links
 from ath_refresh import run_ath_refresh
 
 ATH_BATCHES = [
@@ -732,6 +733,82 @@ def summarize_pre_filter(pairs):
         })
     return rows
 
+def render_holder_breakdown_section(result: dict) -> None:
+    """Top-holder table with per-chain explorer links."""
+    chain = result.get("chain") or ""
+    token_address = (result.get("token_address") or "").strip()
+    if not token_address:
+        return
+
+    links = get_explorer_links(chain, token_address)
+    exp_name = links.get("explorer_name", "Explorer")
+
+    st.markdown("#### Holder breakdown")
+    st.caption(
+        f"Contract `{token_address}` on **{chain}** — "
+        "concentration from the chain explorer when an API key or RPC is available."
+    )
+
+    link_cols = st.columns([1, 1, 2])
+    if links.get("token_url"):
+        link_cols[0].link_button(
+            f"{exp_name} token ↗",
+            links["token_url"],
+            use_container_width=True,
+        )
+    if links.get("holders_url"):
+        link_cols[1].link_button(
+            f"{exp_name} holders ↗",
+            links["holders_url"],
+            use_container_width=True,
+        )
+    if links.get("address_url"):
+        link_cols[2].markdown(
+            f"[View contract on {exp_name} ↗]({links['address_url']})"
+        )
+
+    cache_key = f"holders_{chain}_{token_address}"
+    if cache_key not in st.session_state:
+        with st.spinner(f"Loading top holders from {exp_name}…"):
+            st.session_state[cache_key] = fetch_holder_breakdown(chain, token_address)
+
+    data = st.session_state[cache_key]
+    if data.get("note") and not data.get("holders"):
+        st.info(data["note"])
+
+    if data.get("holders"):
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Top 1 holder", f"{data['top1_pct']:.2f}%")
+        m2.metric("Top 5 holders", f"{data['top5_pct']:.2f}%")
+        m3.metric("Top 10 holders", f"{data['top10_pct']:.2f}%")
+        source = data.get("source") or exp_name
+        m4.metric("Data source", source)
+
+        rows = [
+            {
+                "Rank": h["rank"],
+                "Wallet": h["address_short"],
+                "Supply %": round(h["pct"], 2),
+                "Explorer": h["explorer_url"],
+            }
+            for h in data["holders"]
+        ]
+        st.dataframe(
+            pd.DataFrame(rows),
+            column_config={
+                "Explorer": st.column_config.LinkColumn(
+                    "Explorer",
+                    display_text="Open ↗",
+                ),
+                "Supply %": st.column_config.NumberColumn(
+                    "Supply %",
+                    format="%.2f%%",
+                ),
+            },
+            hide_index=True,
+            use_container_width=True,
+        )
+
 def render_analyser_tab():
     st.markdown("## Coin analyser — run the runner indicator")
 
@@ -856,6 +933,10 @@ def render_analyser_tab():
                 if "vetoed" not in result:
                     result["vetoed"] = len(result.get("vetoFails", [])) > 0
 
+                for key in list(st.session_state.keys()):
+                    if key.startswith("holders_"):
+                        del st.session_state[key]
+
                 st.session_state.current_result = result
                 st.session_state.history.insert(0, result)
 
@@ -966,6 +1047,8 @@ def render_analyser_tab():
                 st.warning(f"Within historical range of confirmed $1B coins (floor: {FLOOR_BENCHMARK})")
             else:
                 st.error(f"Below threshold — structural gap to close before $1B likely")
+
+    render_holder_breakdown_section(result)
 
     st.markdown("---")
 

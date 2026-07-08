@@ -574,6 +574,7 @@ def score_coin_hybrid(pair: DexPair, quant: dict, api_key: str | None = None) ->
         "vetoed": vetoed,
         "timestamp": datetime.now().strftime("%H:%M:%S"),
         "pair_address": pair.pair_address,
+        "token_address": pair.token_address,
         "pair_url": pair.pair_url,
         "liquidity_usd": pair.liquidity_usd,
         "volume_24h": pair.volume_24h,
